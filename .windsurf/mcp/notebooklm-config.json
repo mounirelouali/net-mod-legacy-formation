@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "notebooklm": {
+      "command": "npx",
+      "args": ["-y", "notebooklm-mcp@latest"],
+      "env": {
+        "NOTEBOOKLM_PROFILE": "standard",
+        "NOTEBOOKLM_DISABLED_TOOLS": ""
+      },
+      "metadata": {
+        "description": "NotebookLM MCP Server - Consultation dynamique des bases de connaissances",
+        "version": "latest",
+        "github": "https://github.com/PleasePrompto/notebooklm-mcp",
+        "compte_google": "contact@digitar.be",
+        "notes_cibles": [
+          "Wetic Elearning - Principes pédagogiques",
+          "outofthebox - Méthodologie transformation",
+          "net-mod-legacy WETIC-Solene - Dev .NET Moderne"
+        ],
+        "installation_date": "2026-03-09",
+        "projet": "Formation .NET Modernisation"
+      }
+    }
+  }
+}

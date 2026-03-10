@@ -2,15 +2,39 @@
 
 **Formation** : Modernisation d'une Application de .NET Framework à .NET 8  
 **Durée** : 1h30  
-**Projet Démo** : DataGuard  
+**Code de Référence** : Program.cs (namespace generationxml) - CODE CLIENT RÉEL  
 **Projet Atelier** : ValidFlow  
-**Branche Git** : `jour1-09h00-start` → `jour1-10h30-analyse-legacy`
+**Branche Git** : `jour1-09h00-start` → `jour1-10h30-analyse-legacy`  
 
 ---
 
-## 📚 1. THÉORIE (30 minutes)
+## 🎯 OBJECTIF DE PERFORMANCE (Ce que vous serez capable de FAIRE)
 
-### 1.1 Pourquoi Migrer vers .NET 8 ?
+**À la fin de cette session, vous serez capable de** :
+1. **IDENTIFIER** les 5 problèmes critiques dans un code Legacy .NET Framework
+2. **DIAGNOSTIQUER** l'impact business de chaque problème (coût, risque, performance)
+3. **JUSTIFIER** une décision de migration .NET 8 auprès d'un décideur
+4. **CONCEVOIR** une architecture TO-BE en 5 projets pour découpler le code
+
+**Critère de réussite** : Produire un document d'analyse `Analyse_ValidFlow.md` qui convainc un CTO de lancer la migration.
+
+---
+
+**Approche Pédagogique** : **Transformation Progressive (Learning by Doing)**  
+Nous partons du code client existant et nous transformons progressivement vers .NET 8. Vous VOYEZ et FAITES chaque étape de la transformation en temps réel.
+
+---
+
+## 📚 1. CONTEXTE ET DIAGNOSTIC (30 minutes)
+
+### 1.1 Pourquoi Migrer vers .NET 8 ? (10 min)
+
+**Question d'amorçage (Socratique)** :  
+> "Levez la main : Combien d'entre vous ont des applications .NET Framework 4.x en production ?"  
+> "Maintenant, combien ont déjà reçu une alerte de sécurité qu'ils n'ont pas pu patcher rapidement ?"
+
+**Révélation guidée** : Le formateur note les réponses, puis pose la question clé :  
+> "Si Microsoft arrêtait les patches de sécurité pour .NET Framework demain, que se passerait-il dans vos entreprises ?"
 
 #### Contexte Historique
 
@@ -488,58 +512,131 @@ public class DataProcessor
 
 ## 🖥️ 2. DÉMONSTRATION (45 minutes)
 
-### Étape 1 : Cloner le Code Legacy
+### Préparation
 
-```bash
-# Se placer dans le dossier de travail
-cd d:\formations\dotnet-modernization\
+**Fichier de référence** : `d:\devnet\playground\net-mod-legacy\Program.cs`  
+**Namespace** : `generationxml` (code client réel)
 
-# Cloner le projet DataGuard Legacy
-git clone https://github.com/formation-dotnet/dataguard-legacy.git
-cd dataguard-legacy
-
-# Vérifier la branche
-git branch
-# * legacy
-
-# Ouvrir dans Visual Studio
-start DataGuard.Legacy.sln
-```
+**Setup formateur** :
+1. Ouvrir Visual Studio  
+2. Ouvrir le fichier `Program.cs` du client  
+3. Projeter l'écran aux apprenants  
+4. **Important** : Nous allons lire et analyser le code ENSEMBLE, ligne par ligne
 
 ---
 
-### Étape 2 : Analyser Program.cs - Problème #1 (Sécurité)
+### Étape 1 : Lecture Collaborative du Code (10 minutes)
 
-**Ouvrez** : `DataGuard.Legacy/Program.cs`
+**Objectif** : Comprendre ce que fait l'application avant de chercher les problèmes.
 
-**Lignes 12-13** : Credentials hardcodés
+**Consigne formateur** :  
+> "Nous avons ici un batch de génération XML typique en .NET Framework 4.8. Lisez avec moi le code et essayez de comprendre ce qu'il fait."
+
+#### Code Complet - Program.cs (namespace generationxml)
 
 ```csharp
-// ============================================================
-// ⚠️ PROBLÈME #1 : SÉCURITÉ - ConnectionString hardcodée
-// ============================================================
-// LIGNE 12 : ConnectionString SQL en clair avec password
-string connectionString = "Server=prod-sql.company.local;Database=DataGuardDb;" +
-                         "User Id=sa;Password=SuperSecret123!;TrustServerCertificate=True;";
-// CONSÉQUENCE : Si ce code est sur Git, le mot de passe est exposé publiquement
-// SOLUTION .NET 8 : Secret Manager + appsettings.json
+// Lignes 1-12 : Imports et namespace
+using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Mail;
+using System.Reflection;
+using System.Xml.Serialization;
+using generationxml;
+
+namespace generationxml
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            // Ligne 18 : ConnectionString
+            string connectionString = "your_connection_string_here";
+            
+            // Ligne 20 : Récupération données DB
+            var data = GetDataFromDb(connectionString);
+            
+            // Lignes 23-49 : Définition des règles de validation
+            var rules = new List<TagRule> { /* ... */ };
+            
+            // Lignes 51-61 : Validation des données
+            var validModels = new List<MyXmlModel>();
+            var invalidEntries = new List<string>();
+            bool hasValid = false;
+            ValidateObject(model, rules, invalidEntries, ref hasValid);
+            
+            // Lignes 63-67 : Envoi email si erreurs
+            if (invalidEntries.Count > 0)
+            {
+                SendEmail("admin@example.com", "Invalid XML Data", /* ... */);
+            }
+            
+            // Lignes 69-73 : Sérialisation XML
+            var serializer = new XmlSerializer(typeof(List<MyXmlModel>));
+            using (var writer = new StreamWriter("output.xml"))
+            {
+                serializer.Serialize(writer, validModels);
+            }
+        }
+    }
+}
 ```
 
-**Lignes 68-72** : Credentials SMTP hardcodés
+**Questions à poser aux apprenants** :
+- "Que fait cette application ?" → Réponse : Récupère des données, valide, envoie un email si erreur, génère XML
+- "Quels sont les composants techniques utilisés ?" → SqlConnection, SmtpClient, XmlSerializer
+
+---
+
+### Étape 2 : Identification des Problèmes (20 minutes)
+
+**Consigne formateur** :  
+> "Maintenant que nous comprenons le code, cherchons ensemble les problèmes. Je vais vous montrer 5 catégories de problèmes typiques du code Legacy."
+
+---
+
+#### Problème #1 : ⚠️ SÉCURITÉ - Credentials Hardcodés
+
+**Ligne 18** : ConnectionString avec placeholder
 
 ```csharp
-// ============================================================
-// ⚠️ PROBLÈME #1 : SÉCURITÉ - Credentials SMTP hardcodés
-// ============================================================
-// LIGNE 68-72 : Username et Password SMTP en clair
-var smtpClient = new SmtpClient("smtp.gmail.com")
-{
-    Port = 587,
-    Credentials = new NetworkCredential("admin@company.com", "MyP@ssw0rd123!"),
-    EnableSsl = true
-};
-// CONSÉQUENCE : Violation ISO 27001, impossible d'auditer qui a le mot de passe
-// SOLUTION .NET 8 : dotnet user-secrets set "Email:Password" "xxx"
+string connectionString = "your_connection_string_here";
+```
+
+**Question formateur** : "Que voyez-vous ici ?"
+
+**Réponse attendue** : "C'est un placeholder"
+
+**Explication formateur** :  
+> "Exactement. C'est un placeholder. Mais en PRODUCTION, ce code contient quelque chose comme :"
+
+**Illustration pédagogique (version production)** :
+```csharp
+// ⚠️ VERSION PRODUCTION (exemple pour comprendre le risque)
+string connectionString = "Server=prod-sql.company.local;Database=GenerationXml;" +
+                         "User Id=sa;Password=Prod2024!;TrustServerCertificate=True;";
+```
+
+**Problèmes** :
+- 🔓 Si ce code est sur Git → Password exposé publiquement
+- 🔓 Impossible de changer le mot de passe sans recompiler  
+- 🔓 Violation ISO 27001, SOC 2
+- 🔓 Décompilation du DLL = accès aux credentials
+
+**Ligne 99** : Credentials SMTP avec placeholders
+
+```csharp
+// Code client actuel (ligne 99)
+Credentials = new NetworkCredential("username", "password")
+```
+
+**Illustration pédagogique (version production)** :
+```csharp
+// ⚠️ VERSION PRODUCTION (exemple pour comprendre le risque)  
+Credentials = new NetworkCredential("admin@company.com", "MyP@ssw0rd123!")
 ```
 
 **Annotation pour les apprenants** :
@@ -548,24 +645,43 @@ var smtpClient = new SmtpClient("smtp.gmail.com")
 
 ---
 
-### Étape 3 : Analyser Program.cs - Problème #2 (Performance)
+**Solution .NET 8** :
+```csharp
+// ✅ SOLUTION : Configuration externe sécurisée
+// appsettings.json (non sensible)
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=prod-sql;Database=GenerationXml"
+  }
+}
 
-**Lignes 15-25** : Appel synchrone bloquant à la base de données
+// Secret Manager (développement local)
+// dotnet user-secrets set "ConnectionStrings:Password" "xxx"
+
+// Azure Key Vault (production)
+// Récupération automatique via Configuration
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+```
+
+**Annotation pour les apprenants** :
+> 💡 **Point d'apprentissage** : En .NET 8, **AUCUNE** valeur sensible en dur. Configuration provient de `appsettings.json` (public) ou Secret Manager/Key Vault (sensible).
+
+---
+
+#### Problème #2 : 🐌 PERFORMANCE - Code Synchrone Bloquant
+
+**Lignes 76-92** : GetDataFromDb() - CODE CLIENT RÉEL
 
 ```csharp
-// ============================================================
-// 🐌 PROBLÈME #2 : PERFORMANCE - Appel synchrone bloquant
-// ============================================================
-// LIGNE 15-25 : GetDataFromDb est 100% synchrone
+// Code client actuel (lignes 76-92)
 static Dictionary<string, string> GetDataFromDb(string connectionString)
 {
     var data = new Dictionary<string, string>();
-    
     using (var conn = new SqlConnection(connectionString))
     {
         conn.Open(); // ❌ BLOQUE le thread pendant 50-200ms
         
-        using (var cmd = new SqlCommand("SELECT Tag, Value FROM XmlDataTable", conn))
+        using (var cmd = new SqlCommand("SELECT Tag, Value FROM DataTable", conn))
         using (var reader = cmd.ExecuteReader())
         {
             while (reader.Read()) // ❌ BLOQUE à chaque ligne
@@ -574,41 +690,40 @@ static Dictionary<string, string> GetDataFromDb(string connectionString)
             }
         }
     }
-    
     return data;
 }
-// CONSÉQUENCE : Le thread est gelé pendant toute la requête SQL
-// CPU idle à 2% pendant que le thread attend la réponse DB
-// SOLUTION .NET 8 : async/await pour libérer le thread
 ```
 
-**Version .NET 8 moderne (à montrer en comparaison)** :
+**Problèmes** :
+- Le thread est **gelé** pendant toute la requête SQL (50-200ms)
+- CPU idle à 2% pendant que le thread **attend** la réponse DB  
+- Impossible de traiter plusieurs batches en parallèle
+- Scalabilité limitée
 
+**Solution .NET 8** :
 ```csharp
-// ✅ SOLUTION .NET 8 : Version asynchrone
+// ✅ SOLUTION : Version asynchrone  
 static async Task<Dictionary<string, string>> GetDataFromDbAsync(string connectionString)
 {
     var data = new Dictionary<string, string>();
-    
     await using (var conn = new SqlConnection(connectionString))
     {
-        await conn.OpenAsync(); // ✅ Thread libéré pendant l'attente
+        await conn.OpenAsync(); // ✅ Thread LIBÉRÉ pendant l'attente
         
-        await using (var cmd = new SqlCommand("SELECT Tag, Value FROM XmlDataTable", conn))
+        await using (var cmd = new SqlCommand("SELECT Tag, Value FROM DataTable", conn))
         await using (var reader = await cmd.ExecuteReaderAsync())
         {
-            while (await reader.ReadAsync()) // ✅ Thread libéré à chaque ligne
+            while (await reader.ReadAsync()) // ✅ Thread LIBÉRÉ à chaque ligne
             {
                 data[reader.GetString(0)] = reader.GetString(1);
             }
         }
     }
-    
     return data;
 }
-// GAIN : Le thread peut traiter d'autres batches pendant les I/O
-// Scalabilité : 1 serveur peut traiter 100x plus de batches simultanément
 ```
+
+**Gain** : Le thread peut traiter **100x plus** de batches simultanément.
 
 **Annotation pour les apprenants** :
 
@@ -616,34 +731,36 @@ static async Task<Dictionary<string, string>> GetDataFromDbAsync(string connecti
 
 ---
 
-### Étape 4 : Analyser Program.cs - Problème #3 (Robustesse)
+**Annotation pour les apprenants** :
+> 💡 **Point d'apprentissage** : Toute opération I/O (DB, réseau, fichiers) doit être **asynchrone** en .NET 8. Si ça attend quelque chose d'externe, utilisez `async/await`.
 
-**Lignes 15-25** : Aucune gestion d'erreur sur l'accès DB
+---
+
+#### Problème #3 : 💥 ROBUSTESSE - Aucune Gestion d'Erreurs
+
+**Ligne 81** : conn.Open() sans try-catch - CODE CLIENT RÉEL
 
 ```csharp
-// ============================================================
-// 💥 PROBLÈME #3 : ROBUSTESSE - Aucune gestion d'erreurs
-// ============================================================
-// LIGNE 19 : conn.Open() sans try-catch
-conn.Open(); // ❌ Si la DB est down, l'application crash totalement
+conn.Open(); // ❌ Si DB down, l'application CRASH totalement
+```
 
-// LIGNE 23 : cmd.ExecuteReader() sans try-catch
+**Ligne 83** : cmd.ExecuteReader() sans try-catch
+
+```csharp
 using (var reader = cmd.ExecuteReader()) // ❌ Si timeout SQL, exception non gérée
-
-// CONSÉQUENCE : Une micro-coupure DB de 100ms = crash total du batch
-// Pas de retry, pas de logs, l'utilisateur ne sait pas pourquoi ça a planté
-// SOLUTION .NET 8 : try-catch + Polly retry policy + ILogger
 ```
 
-**Lignes 74** : Aucune gestion d'erreur sur l'envoi email
+**Ligne 102** : client.Send() sans try-catch
 
 ```csharp
-// LIGNE 74 : smtpClient.Send() sans try-catch
-smtpClient.Send(mailMessage); // ❌ Si SMTP timeout, exception non gérée
-
-// CONSÉQUENCE : Si le serveur SMTP est temporairement indisponible, crash
-// SOLUTION .NET 8 : try-catch + logs + queue asynchrone
+client.Send(message); // ❌ Si SMTP indisponible, exception non gérée
 ```
+
+**Problèmes** :
+- Une micro-coupure DB de 100ms = **crash total** du batch  
+- Pas de retry automatique
+- Pas de logs (impossible de diagnostiquer)
+- L'utilisateur ne sait pas pourquoi ça a planté
 
 **Annotation pour les apprenants** :
 
@@ -651,54 +768,70 @@ smtpClient.Send(mailMessage); // ❌ Si SMTP timeout, exception non gérée
 
 ---
 
-### Étape 5 : Analyser Program.cs - Problème #4 (Maintenabilité)
-
-**Lignes 68-74** : Instanciation directe impossible à tester
-
+**Solution .NET 8** :
 ```csharp
-// ============================================================
-// 🔧 PROBLÈME #4 : MAINTENABILITÉ - Couplage fort
-// ============================================================
-// LIGNE 68 : new SmtpClient() - instanciation directe
-var smtpClient = new SmtpClient("smtp.gmail.com"); // ❌ Couplage direct
-
-// CONSÉQUENCE : Impossible d'écrire un test unitaire sans vraie connexion SMTP
-// Impossible de changer de provider (MailKit, SendGrid) sans modifier cette fonction
-// SOLUTION .NET 8 : IEmailService + Constructor Injection
+// ✅ SOLUTION : Gestion d'erreurs + Retry Policy (Polly) + Logs
+try
+{
+    var data = await _repository.GetDataAsync();
+}
+catch (SqlException ex) when (ex.IsTransient)
+{
+    _logger.LogWarning("DB temporairement indisponible, retry...");
+    await Policy.Handle<SqlException>()
+                .WaitAndRetryAsync(3, retryAttempt => 
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)))
+                .ExecuteAsync(() => _repository.GetDataAsync());
+}
+catch (Exception ex)
+{
+    _logger.LogError(ex, "Erreur fatale récupération données");
+    throw;
+}
 ```
 
-**Code Legacy complet (Main)** :
+**Annotation pour les apprenants** :
+> 💡 **Point d'apprentissage** : En production, **tout** peut échouer. Un code robuste anticipe TOUTES les exceptions et logue pour diagnostiquer.
+
+---
+
+#### Problème #4 : 🔧 MAINTENABILITÉ - Couplage Fort
+
+**Ligne 97** : new SmtpClient() - CODE CLIENT RÉEL
+
+```csharp
+var client = new SmtpClient("smtp.example.com"); // ❌ Couplage direct
+```
+
+**Lignes 23-49** : Règles instanciées en dur
+
+```csharp
+var rules = new List<TagRule>
+{
+    new TagRule { /* ... */ } // ❌ Instanciation directe
+};
+```
+
+**Fonction Main() complète** : Tout dans une seule fonction (159 lignes)
 
 ```csharp
 static void Main(string[] args)
 {
-    // Tout est dans une seule fonction - impossible à tester isolément
-    string connectionString = "..."; // Hardcodé
-    
+    string connectionString = "your_connection_string_here"; // Hardcodé
     var data = GetDataFromDb(connectionString); // Appel direct
-    
-    var rules = new List<TagRule> { ... }; // Instanciation directe
-    
-    var validModels = new List<MyXmlModel>();
-    var invalidEntries = new List<string>();
-    
-    // Validation
-    ValidateObject(model, rules, invalidEntries, ref hasValid);
-    
-    // Email
-    var smtp = new SmtpClient(); // Instanciation directe
-    smtp.Send(message);
-    
-    // XML
-    var serializer = new XmlSerializer(typeof(List<MyXmlModel>));
+    var rules = new List<TagRule> { /* ... */ }; // Instanciation
+    ValidateObject(model, rules, invalidEntries, ref hasValid); // Appel direct
+    var client = new SmtpClient(); // Instanciation
+    client.Send(message); // Appel direct
+    var serializer = new XmlSerializer(typeof(List<MyXmlModel>)); // Instanciation
     serializer.Serialize(writer, validModels);
 }
 ```
 
 **Problèmes** :
-- ❌ Impossible de tester `Main()` sans vraie DB + vraie SMTP + vrai filesystem
-- ❌ Modification d'une règle = risque de casser toute la chaîne
-- ❌ Pas de séparation des responsabilités (tout dans une fonction)
+- ❌ Impossible de tester sans vraie DB + vraie SMTP + vrai filesystem
+- ❌ Modification = risque de tout casser
+- ❌ Zéro séparation des responsabilités
 
 **Annotation pour les apprenants** :
 
@@ -706,9 +839,87 @@ static void Main(string[] args)
 
 ---
 
-### Étape 6 : Dessiner l'Architecture TO-BE au Tableau
+**Solution .NET 8** (Dependency Injection) :
+```csharp
+// ✅ SOLUTION : Injection de dépendances via interfaces
+public class DataProcessor
+{
+    private readonly IDataRepository _repository;
+    private readonly IEmailService _emailService;
+    
+    public DataProcessor(IDataRepository repository, IEmailService emailService)
+    {
+        _repository = repository;
+        _emailService = emailService;
+    }
+    
+    public async Task ProcessDataAsync()
+    {
+        var data = await _repository.GetDataAsync(); // Interface testable
+        await _emailService.SendAsync(message); // Interface testable
+    }
+}
 
-**Consigne** : Dessinez ce schéma au tableau pendant l'explication.
+// Tests unitaires POSSIBLES avec mocks
+[Fact]
+public async Task ProcessData_WhenNoData_SendsNoEmail()
+{
+    var mockRepo = new Mock<IDataRepository>();
+    mockRepo.Setup(r => r.GetDataAsync()).ReturnsAsync(new List<Data>());
+    
+    var mockEmail = new Mock<IEmailService>();
+    var processor = new DataProcessor(mockRepo.Object, mockEmail.Object);
+    
+    await processor.ProcessDataAsync();
+    
+    mockEmail.Verify(e => e.SendAsync(It.IsAny<Message>()), Times.Never);
+}
+```
+
+**Annotation pour les apprenants** :
+> 💡 **Point d'apprentissage** : Le mot-clé `new` crée un **couplage fort**. En .NET 8, on utilise l'Injection de Dépendances pour recevoir les objets déjà créés.
+
+---
+
+#### Problème #5 : 📦 DÉPLOIEMENT - Windows Uniquement
+
+**Dépendances Windows** :
+- .NET Framework 4.8 (Windows uniquement)
+- System.Net.Mail.SmtpClient (Windows)
+- Déploiement manuel (copier DLL sur serveur)
+
+**Problèmes** :
+- 💸 Coût : Licence Windows Server (~800€/an)
+- 🐌 Serveur lourd : Windows Server = 4 GB RAM minimum
+- 🚫 Pas de Docker Linux
+- 🚫 Pas de Kubernetes/cloud moderne
+
+**Solution .NET 8** (Docker + Linux) :
+```dockerfile
+FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine
+COPY ./publish /app
+ENTRYPOINT ["dotnet", "/app/GenerationXml.dll"]
+```
+
+**Gains** :
+- ✅ Image Docker **100 MB** (vs 4 GB Windows)
+- ✅ Déploiement **30 secondes** via CI/CD
+- ✅ Compatible Kubernetes, AWS ECS, Azure
+- ✅ Coût réduit de **87%**
+
+---
+
+### Étape 3 : Transformation Progressive - Vision TO-BE (15 minutes)
+
+**Gestion de la charge cognitive** :
+- ✅ **Chunking** : 1 schéma = 1 concept (AS-IS puis TO-BE, jamais les 2 ensemble)
+- ✅ **Modalité audio + visuel** : Le formateur DESSINE en PARLANT (pas de slides statiques)
+- ✅ **Signalisation** : Utiliser 3 couleurs au tableau (Rouge = Legacy, Vert = Modern, Bleu = Architecture)
+
+**Consigne formateur** :  
+> "Nous avons identifié les 5 problèmes. Maintenant, dessinons ENSEMBLE au tableau comment nous allons transformer ce code étape par étape dans les prochaines sessions."
+
+**Important** : Dessiner ce schéma au tableau EN TEMPS RÉEL pendant l'explication (pas de slide pré-faite).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -766,22 +977,41 @@ static void Main(string[] args)
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Expliquez** :
-1. Le **Domain** ne contient QUE la logique métier (règles de validation)
-2. L'**Infrastructure** implémente les détails techniques (DB, Email)
-3. L'**Application.Services** orchestre les appels
-4. La **Console** est juste un point d'entrée (50 lignes max)
-5. Les **Tests** valident chaque couche isolément
+**Explication formateur (interactive)** :
+
+**Question** : "Regardez le code Legacy. Où est la logique métier ?"
+**Réponse attendue** : "Tout mélangé dans Main()"
+
+**Question** : "Si demain on veut passer de SQL Server à PostgreSQL, que doit-on modifier ?"
+**Réponse attendue** : "Tout le code"
+
+**Explication** : "C'est exactement le problème. Dans l'architecture TO-BE :"
+
+1. **Domain** : Logique métier PURE (règles de validation) - Zéro dépendance externe
+2. **Infrastructure** : Détails techniques (EF Core, MailKit) - Implémente les contrats du Domain
+3. **Application.Services** : Orchestre les appels - Réutilisable (API, Blazor, Function)
+4. **Console** : Point d'entrée "Humble Object" - 50 lignes maximum
+5. **Tests** : Valide chaque couche isolément - Couverture > 80%
 
 **Annotation pour les apprenants** :
+> 💡 **Point d'apprentissage** : Une bonne architecture sépare les **préoccupations**. La logique métier ne dépend JAMAIS des détails techniques. Si on change la DB, seul Infrastructure change.
 
-> 💡 **Point d'apprentissage** : Une bonne architecture sépare les **préoccupations** (concerns). La logique métier ne doit JAMAIS dépendre des détails techniques (DB, réseau).
+**Annonce de la prochaine session** :
+> "Dans 30 minutes (10h40), nous allons CRÉER cette structure ensemble, en direct. Vous allez taper les mêmes commandes que moi et construire les 5 projets. Nous partirons de ZÉRO et nous arriverons à une solution compilable."
 
 ---
 
-### Étape 7 : Identifier les 3 Seams à Créer
+---
 
-**Dessinez les 3 interfaces clés** :
+### Étape 4 : Les 3 "Seams" (Coutures) à Créer (5 minutes)
+
+**Rappel concept** (de la théorie) :  
+> Une **Seam** est un endroit où vous pouvez modifier le comportement sans éditer le code.
+
+**Consigne formateur** :  
+> "Pour découpler notre code Legacy, nous allons créer 3 interfaces clés. Regardez comment cela transforme le code."
+
+**Dessinez au tableau les 3 interfaces** :
 
 #### Seam #1 : IDataRepository
 
@@ -883,11 +1113,46 @@ public class DataValidator : IValidator
 
 ---
 
-## 🎯 3. ATELIER PRATIQUE (15 minutes)
+**Annotation pour les apprenants** :
+> 💡 **Point d'apprentissage** : Chaque fois que vous créez une interface et injectez l'implémentation, vous créez une **seam**. Cela rend le code testable et évolutif.
 
-### Énoncé : Analyse du Code Legacy ValidFlow
+---
 
-**Contexte** : ValidFlow est un batch de validation de données clients avant export.
+## 🎯 3. ATELIER PRATIQUE (15 minutes) - Modèle CCAF
+
+### 🎬 CONTEXTE (2 min)
+
+**Mise en situation réaliste** :
+
+> "Vous êtes Architecte Logiciel chez FinanceCorp. Votre CTO vous convoque :  
+> *'On a un batch ValidFlow en .NET Framework 4.8 qui plante 3 fois par semaine. Les ops veulent le tuer. Donne-moi un diagnostic complet d'ici 1 heure. Je veux savoir : c'est quoi les vrais problèmes et combien ça va coûter de NE PAS le migrer.'*"
+
+---
+
+### ⚡ CHALLENGE (1 min)
+
+**Votre mission** :
+- Analyser le code Legacy `ValidFlow.Legacy/Program.cs`
+- Identifier LES 5 PROBLÈMES CRITIQUES (comme pour DataGuard)
+- Chiffrer l'impact business de chaque problème
+- Proposer l'architecture TO-BE en 5 projets
+
+**Livrables** : Document `Analyse_ValidFlow.md` prêt à présenter au CTO
+
+---
+
+### 🔨 ACTIVITÉ (10 min)
+
+**Consignes Formateur** :
+1. Projeter l'énoncé complet ci-dessous
+2. Laisser les apprenants travailler en autonomie (10 min)
+3. Circuler et observer les stratégies utilisées
+
+---
+
+### Énoncé Détaillé : Analyse du Code Legacy ValidFlow
+
+**Contexte technique** : ValidFlow est un batch de validation de données clients avant export.
 
 **Fichier à analyser** : `ValidFlow.Legacy/Program.cs`
 
@@ -939,9 +1204,33 @@ public class DataValidator : IValidator
 
 ---
 
-### Solution de l'Atelier
+---
 
-**Fichier** : `ValidFlow.Solutions/Analyse_ValidFlow.md`
+### � FEEDBACK (5 min) - Correction Participative
+
+**Modalité correction (Apprentissage par les pairs)** :
+
+**Étape 1 : Divergence** (2 min)
+- "Levez la main : Qui a identifié 5 problèmes ?"
+- "Qui en a trouvé 4 ?"
+- **Observation formateur** : Noter mentalement les écarts
+
+**Étape 2 : Peer Review** (2 min)
+1. **Demander à un apprenant** : "Marie, peux-tu nous présenter le Problème #1 que tu as identifié ?"
+2. **Validation par le groupe** : "Qui a identifié le même problème ?" (vote à main levée)
+3. **Technique Socratique** : Si erreur, ne pas corriger directement.  
+   Poser la question : "Regardez la ligne 99. Que se passe-t-il si le serveur SMTP est down ?"
+4. **Répéter pour les 5 problèmes**
+
+**Étape 3 : Synthèse Expert** (1 min)
+- Projeter la solution complète ci-dessous
+- Mettre en évidence les **impacts business chiffrés** (pas juste techniques)
+
+---
+
+### Solution Détaillée de l'Atelier
+
+**Référence** : `ValidFlow.Solutions/Analyse_ValidFlow.md` (document complet disponible)
 
 ```markdown
 # Analyse du Code Legacy ValidFlow
@@ -1188,40 +1477,94 @@ ValidFlow.sln
 
 ---
 
-## 📊 Récapitulatif de la Session
+---
 
-### Ce que nous avons appris :
+## 📊 RÉCAPITULATIF ET PROCHAINES ÉTAPES
 
-1. ✅ **Les 5 problèmes critiques** du code Legacy :
-   - Sécurité (credentials hardcodés)
-   - Performance (code synchrone)
-   - Robustesse (pas de gestion d'erreurs)
-   - Maintenabilité (couplage fort)
-   - Déploiement (Windows uniquement)
+### ✅ Ce que nous avons appris aujourd'hui
 
-2. ✅ **Le concept de "Seam"** (couture) pour le découplage
+**1. Les 5 problèmes critiques du code Legacy** :
+- ⚠️ **Sécurité** : Credentials hardcodés (risque exposition)
+- 🐌 **Performance** : Code synchrone bloquant (CPU idle)
+- 💥 **Robustesse** : Aucune gestion d'erreurs (crash total)
+- 🔧 **Maintenabilité** : Couplage fort (impossible à tester)
+- 📦 **Déploiement** : Windows uniquement (coût, scalabilité)
 
-3. ✅ **L'architecture TO-BE** en 5 projets pour une application moderne
+**2. Le concept de "Seam" (Michael Feathers)** :
+- Interface = point d'injection pour changer le comportement
+- 3 seams clés : IDataRepository, IEmailService, IValidator
 
-### Ce que nous ferons dans les prochaines sessions :
-
-- **10h40-12h30** : Création de la structure 5 projets .NET 8
-- **13h30-15h00** : Extraction de la logique métier vers le Domain
-- **15h10-17h00** : Refactoring avec syntaxe C# 12 + tests unitaires
-
-### Livrable de cette session :
-
-- ✅ Document `Analyse_ValidFlow.md` avec les 5 problèmes identifiés
-- ✅ Schéma d'architecture TO-BE en 5 projets
+**3. L'architecture TO-BE en 5 projets** :
+- Séparation des préoccupations (Domain ≠ Infrastructure)
+- Testabilité (mocks via interfaces)
+- Évolutivité (changer une couche sans affecter les autres)
 
 ---
 
-**Branche Git** : `jour1-10h30-analyse-legacy` (créée et poussée)
+### 🚀 Ce que nous ferons dans les PROCHAINES SESSIONS
 
-**Prochaine étape** : Validation formateur avant de continuer ➡️ 10h40
+**Approche Pédagogique : TRANSFORMATION PROGRESSIVE**
+
+Nous allons transformer le code Legacy étape par étape, en DIRECT, ensemble.
+
+#### Jour 1 - 10h40-12h30 : CRÉATION STRUCTURE
+```
+✅ Créer DataGuard.sln (dotnet new sln)
+✅ Créer les 5 projets vides (dotnet new classlib)
+✅ Configurer les références entre projets
+✅ Valider la compilation (dotnet build)
+```
+
+#### Jour 1 - 13h30-15h00 : MIGRATION MÉTIER
+```
+✅ Copier IRule, TagRule depuis Program.cs (namespace generationxml)
+✅ Déplacer vers DataGuard.Domain
+✅ Supprimer dépendances externes (System.Data, System.Net)
+✅ Créer tests unitaires (MandatoryRule, MinLengthRule)
+```
+
+#### Jour 1 - 15h10-17h00 : MODERNISATION C# 12
+```
+✅ File-scoped namespaces
+✅ Primary constructors
+✅ Records (XmlData, ValidationResult)
+✅ Async/await (signatures)
+```
+
+**À chaque étape** : Vous TAPEZ les mêmes commandes que moi. Vous VOYEZ la transformation en temps réel.
 
 ---
 
-**Document créé le** : 6 mars 2026  
-**Version** : 1.0  
-**Auteur** : Expert Architecte Logiciel .NET (BMAD Method)
+### 📋 LIVRABLES DE CETTE SESSION
+
+**Pour les apprenants** :
+- ✅ Document `Analyse_ValidFlow.md` complété
+- ✅ Schéma d'architecture TO-BE (dessin ou digital)
+- ✅ Compréhension des 5 problèmes Legacy
+
+**Pour le formateur** :
+- ✅ Validation que tous les apprenants ont identifié les problèmes
+- ✅ Vérification de la compréhension du concept de Seam
+- ✅ Préparation de l'environnement pour 10h40 (Visual Studio ouvert)
+
+---
+
+### ⏰ PAUSE - 10h30 à 10h40 (10 minutes)
+
+**Consignes pour la pause** :
+- ✅ Sauvegarder votre travail
+- ✅ Commit Git : `git commit -m "Analyse Legacy ValidFlow completed"`
+- ✅ Préparer Visual Studio pour la prochaine session
+- ✅ Poser vos questions au formateur si besoin
+
+---
+
+**Branche Git** : `jour1-10h30-analyse-legacy`  
+**Prochaine session** : **10h40 - Création Structure .NET 8** (EN DIRECT ENSEMBLE)
+
+---
+
+**Document révisé le** : 9 mars 2026  
+**Version** : 2.0 (Révision avec code client réel Program.cs namespace generationxml)  
+**Approche** : Transformation Progressive (Learning by Doing)  
+**Auteur** : Formation .NET Modernisation - BMad Method

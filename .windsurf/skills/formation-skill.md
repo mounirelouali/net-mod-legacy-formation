@@ -498,7 +498,195 @@ jour1-17h00-end (Code avec syntaxe C# 12)
 
 ---
 
+## 11. Utilisation de Bases de Connaissances et Sources Externes
+
+### Limitation Technique Importante
+
+**Clarification** : Les assistants IA (Cascade, etc.) ne peuvent PAS :
+- ❌ Se connecter à des services web externes (NotebookLM, Google Docs, etc.)
+- ❌ Maintenir des connexions persistantes entre sessions
+- ❌ Lire des notes en ligne ou bases de données cloud
+- ❌ Accéder à des comptes utilisateurs tiers
+
+**Pourquoi cette limitation ?** : Raisons de sécurité et architecture technique.
+
+---
+
+### Solution : Export Local en Markdown
+
+**Processus validé** :
+
+1. **Exporter les notes pertinentes** depuis NotebookLM (ou autre outil)
+2. **Convertir en Markdown** (copier-coller le contenu)
+3. **Placer dans le projet** : `_bmad-output/knowledge-base/`
+4. **L'assistant peut alors** lire et utiliser systématiquement ces fichiers
+
+**Structure recommandée** :
+```
+_bmad-output/
+└── knowledge-base/
+    ├── Principes_Pedagogiques.md (ex: principes Wetic Elearning)
+    ├── Methodologie_Projet.md (ex: méthodologie outofthebox)
+    ├── Contexte_Formation_Specifique.md (ex: contexte client)
+    └── Standards_Code.md (ex: conventions de code)
+```
+
+---
+
+### Règle de Confidentialité STRICTE
+
+**JAMAIS mentionner les bases de connaissances ou outils de préparation dans les supports apprenants.**
+
+**Séparation claire** :
+- **Matériel interne formateur** : Notes NotebookLM, bases de connaissances, outils de préparation
+- **Matériel apprenant** : Supports de cours, code, solutions (100% professionnel et neutre)
+
+**Exemple d'application** :
+
+❌ **Interdit** dans support apprenant :
+```markdown
+Source : Note NotebookLM "Wetic Elearning"
+```
+
+✅ **Autorisé** dans support apprenant :
+```markdown
+Source : Principes de pédagogie active
+Référence : Clean Architecture (Robert C. Martin)
+```
+
+---
+
+### Workflow de Préparation avec Bases de Connaissances
+
+**Étape 1 : Collecte** (Avant création support)
+```
+1. Identifier les sources pertinentes (notes, articles, livres)
+2. Exporter en Markdown local
+3. Placer dans knowledge-base/
+```
+
+**Étape 2 : Utilisation** (Pendant création support)
+```
+1. L'assistant lit les fichiers knowledge-base/
+2. Applique les principes et méthodologies
+3. Génère le support SANS mentionner les sources internes
+```
+
+**Étape 3 : Citation** (Dans support final)
+```
+1. Citer uniquement des sources publiques et officielles
+2. Exemple : Microsoft Docs, livres publiés, articles reconnus
+3. Jamais : Notes personnelles, bases de connaissances privées
+```
+
+---
+
+### Cas d'Usage : Formation .NET Modernisation
+
+**Bases de connaissances utilisées** (Internes formateur) :
+- `Wetic_Elearning.md` : Principes pédagogiques (approche progressive, scaffolding)
+- `outofthebox.md` : Méthodologie de transformation (AS-IS → TO-BE)
+- `WETIC_Solene_DotNet_Moderne.md` : Contexte spécifique du projet client
+
+**Sources citées** (Dans supports apprenants) :
+- Microsoft Docs (.NET 8 Performance)
+- Clean Architecture (Robert C. Martin)
+- Domain-Driven Design (Eric Evans)
+- Dependency Injection in .NET (Mark Seemann)
+
+---
+
+## 12. Décisions Stratégiques Documentées
+
+### Approche Démonstration : Transformation Progressive
+
+**Décision** : Transformation en direct (pas side-by-side)
+
+**Justification** :
+- ✅ Learning by Doing : Apprenants voient chaque étape
+- ✅ Scaffolding : Construction incrémentale
+- ✅ Compréhension profonde : POURQUOI à chaque changement
+- ✅ Réalisme : Reproduit le travail en entreprise
+
+**Mise en œuvre** :
+1. Partir du code client RÉEL (Program.cs)
+2. Analyser ligne par ligne (09h00-10h30)
+3. Créer la structure ensemble (10h40-12h30)
+4. Migrer progressivement (13h30-17h00)
+
+---
+
+### Timing Implémentation .NET 8 : Créer Ensemble
+
+**Décision** : Implémentation progressive à partir de 10h40
+
+**Justification** :
+- ✅ Timing optimal : Après avoir compris les problèmes
+- ✅ Construction incrémentale : On crée ce qu'on a analysé
+- ✅ Apprentissage actif : Les apprenants créent pendant l'atelier
+
+**Timeline** :
+- 09h00 : Analyse (identifier problèmes)
+- 10h40 : Création structure (5 projets)
+- 13h30 : Migration métier (Domain)
+- 15h10 : Modernisation (C# 12)
+
+---
+
+### Code de Référence : Authentique + Enrichi
+
+**Décision** : Partir du code client avec enrichissement pédagogique
+
+**Approche** :
+1. Utiliser le code client TEL QUEL (namespace generationxml)
+2. Expliquer que les placeholders contiennent de vraies valeurs en production
+3. Illustrer dans le support avec exemples réalistes
+4. Ne PAS modifier le code client (authenticité)
+
+**Nommage** :
+- Analyse (09h00) : `namespace generationxml` (code client)
+- Création (10h40) : `namespace DataGuard` (nom pédagogique)
+- Transition documentée et expliquée
+
+---
+
+### Corrections Ateliers : Intégrées + Annexe
+
+**Décision** : Corrections dans le support + section séparée
+
+**Structure** :
+```markdown
+## 3. ATELIER PRATIQUE
+### Énoncé
+### Correction (À présenter après travail individuel)
+### Solution complète
+
+## 4. ANNEXE : Solution Détaillée
+[Pour révision autonome]
+```
+
+**Avantages** :
+- Support autonome pour formateur
+- Flexibilité selon temps disponible
+- Document de révision pour apprenants
+
+---
+
 **Document créé le** : 6 mars 2026  
-**Version** : 1.0  
+**Dernière mise à jour** : 9 mars 2026  
+**Version** : 1.1  
 **Auteur** : Formation .NET Modernisation  
 **Prochaine révision** : Après chaque session de formation
+
+---
+
+## Changelog
+
+### Version 1.1 (9 mars 2026)
+- **Ajout** : Section 11 (Bases de connaissances externes)
+- **Ajout** : Section 12 (Décisions stratégiques documentées)
+- **Clarification** : Limitation technique sur connexions externes
+- **Validation** : Approche transformation progressive
+- **Validation** : Timing implémentation .NET 8
+- **Validation** : Code de référence authentique enrichi
+- **Validation** : Structure corrections ateliers
