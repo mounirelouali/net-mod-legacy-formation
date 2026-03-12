@@ -1,6 +1,6 @@
-# Analyse ValidFlow - Correction de l'Atelier
+# Analyse ValidFlow - Correction de l'Exercice
 
-## Mission
+## Objectif
 Identifier les 5 problèmes architecturaux critiques dans le code Legacy `ValidFlow.Legacy/Start/Program.cs`.
 
 ---

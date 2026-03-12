@@ -1,7 +1,5 @@
 # Documentation Complète - Projet Génération XML
 
-> **Note** : Cette documentation a été enrichie avec les principes d'architecture .NET moderne et les meilleures pratiques pédagogiques issus des notes NotebookLM (TECHNIQUE WETIC-Solene + ELEARNING WETIC).
-
 ## Vue d'ensemble du projet
 
 **Nom du projet** : generationxml  
@@ -678,7 +676,7 @@ public class MyXmlModel
 3. **Optimisation mémoire** : Stream processing pour gros fichiers XML
 4. **Connection pooling** : Réutilisation des connexions SQL
 
-## 🚨 Analyse des Anti-Patterns Legacy (Principes TECHNIQUE WETIC-Solene)
+## 🚨 Analyse des Anti-Patterns Legacy
 
 ### Anti-Pattern #1 : ⚠️ SÉCURITÉ - Credentials Hardcodés
 
@@ -874,39 +872,30 @@ public void Validate_ShouldReturnError_WhenNameIsEmpty()
 
 **Principe d'architecture** : **Domain-Driven Design (DDD)** + **Clean Architecture** - Isoler la logique métier au centre, indépendante de toute infrastructure.
 
-## 🎓 Approche Pédagogique (Principes ELEARNING WETIC)
+## 🎓 Approche Pédagogique
 
-### Modèle CCAF (Michael Allen) Appliqué à la Formation
+### Objectifs de Formation
 
-Cette documentation suit le modèle **CCAF** pour maximiser l'apprentissage :
-
-1. **C**ontexte : Code Legacy réel (generationxml) avec problèmes business identifiables
-2. **C**hallenge : Identifier les 5 anti-patterns et leur impact business
-3. **A**ctivité : Analyse du code ValidFlow (atelier pratique sans annotations)
-4. **F**eedback : Correction détaillée avec solutions .NET 8 modernes
-
-### Action Mapping (Cathy Moore)
-
-**Objectif de performance** : À la fin de la formation, les apprenants seront capables de :
+**À la fin de la formation, les participants seront capables de** :
 - **IDENTIFIER** les 5 anti-patterns dans un code Legacy .NET Framework
 - **DIAGNOSTIQUER** l'impact business (coût, risque, performance)
-- **JUSTIFIER** une migration .NET 8 auprès d'un décideur
-- **CONCEVOIR** une architecture TO-BE en 5 projets (Domain, Infrastructure, Application, Console, Tests)
+- **JUSTIFIER** une migration .NET 8 auprès d'un décideur technique
+- **CONCEVOIR** une architecture moderne en 5 projets (Domain, Infrastructure, Application, Console, Tests)
 
-**Critère de réussite** : Produire un document `Analyse_ValidFlow.md` qui convainc un CTO de lancer la migration.
+**Critère de réussite** : Produire un document d'analyse technique qui démontre la valeur business de la migration.
 
-### Gestion de la Charge Cognitive
+### Progression Pédagogique
 
-**Chunking** : La formation découpe le contenu en 5 problèmes distincts (1 problème = 1 chunk cognitive).
+**Jour 1** : Analyse du code Legacy avec annotations détaillées  
+**Jour 2-5** : Exercices progressifs avec autonomie croissante  
+**Atelier pratique** : Analyse du code ValidFlow sans annotations (application des compétences)
 
-**Scaffolding** (Échafaudage) :
-- **Jour 1** : Code fil rouge avec commentaires (support fort)
-- **Jour 2-5** : Retrait progressif des annotations (fading)
-- **Atelier** : Code ValidFlow sans commentaires (autonomie complète)
+### Méthode d'Apprentissage
 
-**Questions Socratiques** :
-- "Que se passe-t-il si le serveur SMTP est down ?" (au lieu de dire "Il faut un try-catch")
-- "Combien de batches simultanés ce serveur peut-il traiter ?" (pour découvrir le problème de scalabilité)
+1. **Contexte réaliste** : Code Legacy authentique avec problèmes business mesurables
+2. **Analyse guidée** : Identification des anti-patterns et de leur impact
+3. **Exercice pratique** : Application autonome sur un nouveau cas (ValidFlow)
+4. **Correction détaillée** : Solutions .NET 8 modernes avec justifications techniques
 
 ---
 
@@ -1037,11 +1026,11 @@ Ce projet démontre une architecture **typique du code .NET Framework 4.8** avec
 
 ### Pour la Formation
 
-Cette documentation applique les **principes pédagogiques WETIC** :
-- ✅ **Action Mapping** : Objectifs centrés sur FAIRE (identifier, diagnostiquer, justifier)
-- ✅ **Modèle CCAF** : Contexte réaliste → Challenge CTO → Activité ValidFlow → Feedback expert
-- ✅ **Scaffolding** : Support progressif (commentaires → fading → autonomie)
-- ✅ **Charge cognitive** : Chunking en 5 problèmes distincts
+Cette documentation applique une **approche pédagogique structurée** :
+- ✅ **Objectifs actionnables** : Centrés sur des compétences pratiques (identifier, diagnostiquer, justifier)
+- ✅ **Progression contextualisée** : Cas réel → Analyse guidée → Exercice autonome → Correction experte
+- ✅ **Support progressif** : Annotations détaillées → Exercices guidés → Autonomie complète
+- ✅ **Découpage logique** : 5 problèmes distincts pour faciliter l'assimilation
 
 ### Pour l'Architecture Moderne
 
@@ -1067,9 +1056,11 @@ La migration vers **.NET 8** implémente les **principes SOLID + DDD + Clean Arc
 - xUnit + Moq (tests)
 - Docker + Linux
 
-**Sources NotebookLM consultées** :
-- TECHNIQUE net-mod-legacy WETIC-Solene (14 sources) - Architecture .NET moderne
-- ELEARNING - WETIC (28 sources) - Principes pédagogiques
+**Références techniques** :
+- Microsoft .NET 8 Documentation
+- Clean Architecture (Robert C. Martin)
+- Domain-Driven Design (Eric Evans)
+- Enterprise Application Patterns
 
 **Date de documentation** : Mars 2026  
-**Dernière mise à jour** : 12 mars 2026 (enrichissement NotebookLM)
+**Dernière mise à jour** : 12 mars 2026
