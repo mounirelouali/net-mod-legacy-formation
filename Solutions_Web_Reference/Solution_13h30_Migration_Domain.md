@@ -2,11 +2,59 @@
 
 [🔙 Retour au Workbook](../03_Workbooks_Stagiaires/Workbook_13h30_Migration_Domain.md)
 
-**Rappel de la mission :** Isoler l'entité `Client` et sa logique de validation métier dans le projet `ValidFlow.Domain`, en utilisant les nouveautés de C# 12 sans aucune dépendance à la base de données.
+### 📌 Rappel du Contexte
+- **DataGuard** (ex-generationxml) : C'est le projet "Fil Rouge" utilisé par le formateur pour les démonstrations.
+- **ValidFlow** : C'est VOTRE projet d'atelier pour la mise en pratique.
+
+**Rappel de la mission :** Isoler l'entité `Client` et sa logique de validation métier dans le projet `ValidFlow.Domain`, en utilisant C# 12, sans aucune dépendance technique.
 
 ---
 
-### 📊 Architecture du projet Domain
+### 📊 Approche Top-Down (AS-IS vs TO-BE)
+Dans le code Legacy, tout était mélangé. Notre objectif est de sanctuariser les règles métier.
+
+```mermaid
+graph TD
+    subgraph AS-IS ["AS-IS (Code Legacy)"]
+        A[Program.cs] --> B(Connexion SQL)
+        A --> C(Classe Client)
+        A --> D(Règles if/else)
+        A --> E(Envoi SMTP)
+        style A fill:#f8d7da,stroke:#dc3545,stroke-width:2px
+    end
+    
+    subgraph TO-BE ["TO-BE (Clean Architecture)"]
+        F[ValidFlow.Domain] --> G(Entities/Client.cs)
+        G -.-> H(Méthode IsValid)
+        style F fill:#d4edda,stroke:#28a745,stroke-width:2px
+    end
+    
+    AS-IS -.Migration.-> TO-BE
+```
+
+---
+
+### 📁 Structure du Projet Domain
+
+```
+ValidFlow.Domain/
+├─ Entities/
+│  └─ Client.cs           (Entité métier avec record C# 12)
+└─ Validators/
+   └─ ClientValidator.cs  (Logique de validation métier)
+```
+
+---
+
+### 🎯 Objectifs Pédagogiques
+
+1. **Isolation de la logique métier** : Séparer les règles de validation du code technique
+2. **C# 12 Moderne** : Utiliser les `record` pour l'immuabilité
+3. **Zéro dépendance** : Aucune référence à EF Core, SQL, ou Infrastructure
+
+---
+
+### 📊 Modèle de Données
 
 ```mermaid
 classDiagram
@@ -17,29 +65,17 @@ classDiagram
         +string Country
         +IsValid() bool
     }
-    note for Client "Entité métier pure (POCO)\nAucune dépendance externe"
-```
-
----
-
-### 🎯 Objectifs Pédagogiques
-
-1. **Isolation de la logique métier** : Séparer les règles de validation du code technique
-2. **C# 12 Modernes** : Utiliser les `record` pour l'immuabilité
-3. **Zéro dépendance** : Aucune référence à EF Core, SQL, ou Infrastructure
-
----
-
-### 📁 Structure du Projet Domain
-
-```
-ValidFlow.Domain/
-├─ Models/
-│  └─ Client.cs           (Entité métier)
-├─ Interfaces/
-│  └─ IClientValidator.cs (Contrat de validation)
-└─ Validators/
-   └─ ClientValidator.cs  (Implémentation métier)
+    
+    class ClientValidator {
+        +Validate(Client) bool
+        -CheckMandatoryFields(Client) bool
+        -ValidateEmail(string) bool
+    }
+    
+    Client --> ClientValidator : utilise
+    
+    note for Client "Record C# 12\nAucune dépendance technique"
+    note for ClientValidator "Logique métier pure\nRègles de validation isolées"
 ```
 
 ---
@@ -48,5 +84,6 @@ ValidFlow.Domain/
 
 - [ ] Le projet Domain compile sans dépendance externe
 - [ ] L'entité `Client` utilise un `record` C# 12
-- [ ] La logique de validation est isolée dans une classe dédiée
+- [ ] La logique de validation est isolée dans `ClientValidator`
 - [ ] Aucune référence à `System.Data` ou `Microsoft.EntityFrameworkCore`
+- [ ] Les tests unitaires peuvent être écrits sans base de données
