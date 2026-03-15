@@ -18,3 +18,4 @@
     - Ne JAMAIS placer les dossiers de solution en local chez les stagiaires.
     - Ne JAMAIS mettre de lien vers la solution à l'intérieur du Workbook stagiaire (cela détruit la difficulté désirable).
     - Les solutions sont des URL Web (`main` sur GitHub) que le formateur partage manuellement dans le chat UNIQUEMENT à la fin du temps imparti.
+11. **Visualisation Pédagogique :** Intégrer systématiquement des diagrammes Mermaid (classDiagram, sequenceDiagram, architecture) dans les Workbooks et les Solutions pour schématiser les concepts complexes et réduire la charge cognitive.
