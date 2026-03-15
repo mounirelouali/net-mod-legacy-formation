@@ -1,4 +1,8 @@
+[🔙 Retour au Workbook](../03_Workbooks_Stagiaires/Workbook_10h40_Architecture.md)
+
 # Correction : Architecture ValidFlow.Modern
+
+**Rappel de la mission :** Créer la coquille vide pour ValidFlow.Modern (Solution + 5 projets + Dépendances).
 
 Voici les commandes complètes pour créer la Clean Architecture de l'atelier :
 

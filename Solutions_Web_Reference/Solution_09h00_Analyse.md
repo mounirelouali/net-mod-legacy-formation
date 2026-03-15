@@ -1,4 +1,14 @@
+[🔙 Retour au Workbook](../03_Workbooks_Stagiaires/Workbook_09h00_Analyse.md)
+
 # Analyse ValidFlow - Correction de l'Exercice
+
+**Formation** : Modernisation d'une Application de .NET Framework à .NET 8  
+**Projet** : ValidFlow (Atelier Pratique)  
+**Session** : Jour 1 - 09h00-10h30
+
+**Rappel de la mission :** Identifier et documenter les 5 anti-patterns critiques (Sécurité, Performance, Robustesse, Maintenabilité, Déploiement) avec les numéros de ligne.Legacy `ValidFlow.Legacy/Start/Program.cs`.
+
+---
 
 ## Objectif
 Identifier les 5 problèmes architecturaux critiques dans le code Legacy `ValidFlow.Legacy/Start/Program.cs`.
