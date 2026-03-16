@@ -1,132 +1,158 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Mail;
+using System.Reflection;
 using System.Xml.Serialization;
+using generationxml; // For models and rules
 
 namespace generationxml
 {
-    // CODE LEGACY - FIL ROUGE FORMATION .NET 8
-    // Ce code contient DÉLIBÉRÉMENT 5 anti-patterns pour démonstration pédagogique
-    // NE PAS utiliser en production - Exemple de mauvaises pratiques
-    
-    class Program
+    internal class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("=== Batch de Génération XML - Version Legacy ===\n");
+            string connectionString = "your_connection_string_here";
 
-            // ❌ ANTI-PATTERN #1 : CREDENTIALS HARDCODÉS (Lignes 24-25)
-            // Problème : Secrets en clair dans le code source
-            // Impact : Risque de fuite si commit sur Git, impossible de changer sans recompiler
-            string connectionString = "Server=prod-sql.company.local;Database=GenerationXml;User Id=sa;Password=Prod2024!;";
-            string smtpPassword = "MyP@ssw0rd123!";
+            var data = GetDataFromDb(connectionString); // Dictionary<string, string>
 
-            // ❌ ANTI-PATTERN #2 : APPELS SYNCHRONES BLOQUANTS (Ligne 30)
-            // Problème : Thread bloqué pendant les I/O, CPU idle
-            // Impact : Scalabilité limitée, waste de ressources serveur
-            var data = GetDataFromDatabase(connectionString);
-
-            // ❌ ANTI-PATTERN #5 : LOGIQUE MÉTIER MÉLANGÉE AVEC ACCÈS DONNÉES (Lignes 35-45)
-            // Problème : Validation codée en dur dans le flux principal
-            // Impact : Impossible à tester unitairement, couplage fort
-            var validRecords = new List<XmlRecord>();
-            foreach (var record in data)
+            // Example: rules could be loaded from DB/config
+            var rules = new List<TagRule>
             {
-                // Règles métier hardcodées
-                if (!string.IsNullOrEmpty(record.Name) && 
-                    record.Name.Length >= 3 && 
-                    record.Code.Length == 5 &&
-                    !record.Code.Contains("X"))
+                new TagRule
                 {
-                    validRecords.Add(record);
+                    TagName = "Name",
+                    Rules = new List<IRule>
+                    {
+                        new MandatoryRule(),
+                        new MinLengthRule(3),
+                        new MaxLengthRule(10),
+                        new ForbiddenCharsRule(new[] { 'T', 'u' }),
+                        new AuthorizedCharsRule("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray())
+                    }
+                },
+                new TagRule
+                {
+                    TagName = "Code",
+                    Rules = new List<IRule>
+                    {
+                        new MandatoryRule(),
+                        new MinLengthRule(2),
+                        new MaxLengthRule(5),
+                        new ForbiddenCharsRule(new[] { 'X', 'Y' }),
+                        new AuthorizedCharsRule("0123456789".ToCharArray())
+                    }
                 }
+            };
+
+            var validModels = new List<MyXmlModel>();
+            var invalidEntries = new List<string>();
+
+            var model = new MyXmlModel();
+            // TODO: Set properties on model and its children from your data as needed
+
+            bool hasValid = false;
+            ValidateObject(model, rules, invalidEntries, ref hasValid);
+
+            if (hasValid)
+                validModels.Add(model);
+
+            if (invalidEntries.Count > 0)
+            {
+                SendEmail("admin@example.com", "Invalid XML Data",
+                    "The following entries are invalid:\n" + string.Join("\n", invalidEntries));
             }
 
-            Console.WriteLine($"Enregistrements valides : {validRecords.Count}/{data.Count}");
-
-            // ❌ ANTI-PATTERN #4 : INSTANCIATION DIRECTE AVEC 'new' (Ligne 53)
-            // Problème : Couplage fort, impossible d'injecter un mock pour tests
-            // Impact : Code non testable, violation du principe d'inversion de dépendances
-            var serializer = new XmlSerializer(typeof(List<XmlRecord>));
-            
+            var serializer = new XmlSerializer(typeof(List<MyXmlModel>), new XmlRootAttribute("Root"));
             using (var writer = new StreamWriter("output.xml"))
             {
-                serializer.Serialize(writer, validRecords);
+                serializer.Serialize(writer, validModels);
             }
-
-            Console.WriteLine("✓ Fichier XML généré : output.xml");
-
-            // ❌ ANTI-PATTERN #1 + #4 : Credentials hardcodés + Instanciation directe (Lignes 64-66)
-            SendEmailNotification(
-                "admin@company.com", 
-                smtpPassword, 
-                $"Export XML terminé : {validRecords.Count} enregistrements"
-            );
-
-            Console.WriteLine("✓ Email de notification envoyé");
         }
 
-        // ❌ ANTI-PATTERN #2 + #3 : Appel synchrone + Aucune gestion d'erreurs (Lignes 73-89)
-        // Problème : Pas de try-catch, crash si connexion échoue
-        // Impact : Application arrêtée brutalement, pas de logs d'erreur
-        static List<XmlRecord> GetDataFromDatabase(string connectionString)
+        static Dictionary<string, string> GetDataFromDb(string connectionString)
         {
-            var records = new List<XmlRecord>();
-            
-            // ⚠️ Aucun try-catch : Si connexion échoue, crash total
-            using (var connection = new SqlConnection(connectionString))
+            var data = new Dictionary<string, string>();
+            using (var conn = new SqlConnection(connectionString))
             {
-                connection.Open(); // ⚠️ Synchrone : Thread bloqué
-                
-                var command = new SqlCommand("SELECT Name, Code, Value FROM XmlData WHERE IsActive = 1", connection);
-                using (var reader = command.ExecuteReader()) // ⚠️ Synchrone : Thread bloqué
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT Tag, Value FROM DataTable", conn))
+                using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        records.Add(new XmlRecord
-                        {
-                            Name = reader.GetString(0),
-                            Code = reader.GetString(1),
-                            Value = reader.GetDecimal(2)
-                        });
+                        data[reader.GetString(0)] = reader.GetString(1);
                     }
                 }
             }
-
-            return records;
+            return data;
         }
 
-        // ❌ ANTI-PATTERN #3 + #4 : Aucun try-catch + Instanciation directe SmtpClient (Lignes 103-114)
-        static void SendEmailNotification(string to, string password, string message)
+        static void SendEmail(string to, string subject, string body)
         {
-            // ⚠️ Aucun try-catch : Si SMTP échoue, crash total
-            var mail = new MailMessage("noreply@company.com", to)
+            var message = new MailMessage("noreply@example.com", to, subject, body);
+            var client = new SmtpClient("smtp.example.com")
             {
-                Subject = "Export XML - Notification",
-                Body = message
-            };
-
-            // ⚠️ Instanciation directe : Impossible de mocker pour tests
-            var smtp = new SmtpClient("smtp.company.com", 587)
-            {
-                Credentials = new NetworkCredential("admin@company.com", password),
+                Credentials = new NetworkCredential("username", "password"),
                 EnableSsl = true
             };
-
-            smtp.Send(mail); // ⚠️ Synchrone : Thread bloqué
+            client.Send(message);
         }
-    }
 
-    // Modèle de données simple
-    [Serializable]
-    public class XmlRecord
-    {
-        public string Name { get; set; }
-        public string Code { get; set; }
-        public decimal Value { get; set; }
+        // Recursive validation for model and child classes
+        private static void ValidateObject(
+            object obj,
+            List<TagRule> rules,
+            List<string> invalidEntries,
+            ref bool hasValid)
+        {
+            if (obj == null) return;
+
+            var type = obj.GetType();
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                var value = prop.GetValue(obj);
+
+                if (prop.PropertyType == typeof(string))
+                {
+                    var tagRule = rules.FirstOrDefault(r => r.TagName == prop.Name);
+                    var strValue = value as string;
+                    bool isValid = true;
+                    if (tagRule != null)
+                    {
+                        foreach (var rule in tagRule.Rules)
+                        {
+                            if (!rule.IsValid(strValue))
+                            {
+                                invalidEntries.Add(rule.ErrorMessage(prop.Name, strValue));
+                                isValid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (isValid && strValue != null)
+                        hasValid = true;
+                }
+                else if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string) && !prop.PropertyType.FullName.StartsWith("System."))
+                {
+                    ValidateObject(value, rules, invalidEntries, ref hasValid);
+                }
+                else if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) && prop.PropertyType != typeof(string))
+                {
+                    var enumerable = value as System.Collections.IEnumerable;
+                    if (enumerable != null)
+                    {
+                        foreach (var item in enumerable)
+                        {
+                            if (item != null && item.GetType().IsClass && item.GetType() != typeof(string))
+                                ValidateObject(item, rules, invalidEntries, ref hasValid);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
