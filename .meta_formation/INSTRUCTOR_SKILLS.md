@@ -1,21 +1,16 @@
-# Mounir's Technical Training Framework (V2)
+# Mounir's Technical Training Framework (V3)
 
-## 1. Philosophie Pédagogique
-1. **Zéro Meta-Texte :** Les supports générés ne doivent contenir aucune mention "Note Formateur cachée". Tout doit être rédigé sous forme de rubriques pédagogiques intégrées.
-2. **Vocabulaire Professionnel :** Utiliser les termes de l'ingénierie (Questionnement ciblé, Scaffolding, Charge cognitive, Difficulté désirable). BANNIR le terme "Maïeutique".
-3. **Validation Itérative (Le Challenge Permanent) :** L'ingénieur pédagogique doit toujours valider la cohérence des demandes avec le contexte global. Ne jamais appliquer une demande si elle contredit un principe E-learning fondamental.
+## 1. Philosophie Pédagogique & Animation (Le Maestro)
+1. **La Règle des 3 Temps (Maïeutique) :** La Cible (Montrer le code) -> L'Appât (Question "Worst-Case Scenario") -> Le Silence (5 à 8 sec) -> L'Estocade (Validation métier).
+2. **Zéro Meta-Texte :** Les supports formateur ne doivent contenir aucune mention "Note Formateur cachée". 
+3. **Difficulté Désirable :** Ne JAMAIS donner la réponse avant la réflexion de l'apprenant.
 
-## 2. Architecture et Logistique Git
-4. **Mise sur les Rails (Single Branch) :** Onboarder les stagiaires avec `git clone --single-branch --branch [nom-du-jour]`. Ils ne font plus de `git pull` de la journée pour éviter les conflits (Merge Conflicts).
-5. **Standardisation de la Nomenclature :** Tous les fichiers d'exercice doivent suivre le format `Type_Heure_Sujet.md` (ex: `Workbook_10h40_Architecture.md`, `Solution_10h40_Architecture.md`).
-6. **Le "Golden Master" :** La branche `main` contient la vérité absolue (Code, Workbooks, Solutions). La branche stagiaire ne contient QUE le code de départ et les Workbooks.
-7. **Gestion des Dossiers Vides :** Toujours placer un fichier `.gitkeep` dans les dossiers devant rester vides (ex: `01_Demo_Formateur/`).
+## 2. Les Workbooks Stagiaires (Cahiers de Laboratoire)
+4. **Théorie + Exécution :** Le Workbook doit TOUJOURS contenir un rappel théorique concis et un diagramme visuel (Mermaid) AVANT la liste des tâches techniques. Il guide l'exécution tout en donnant du sens.
+5. **Aucun Lien de Triche :** Les Workbooks ne contiennent aucun lien URL vers une solution. Ils se terminent par : "> 💡 **Correction :** Le formateur partagera le fichier de correction officiel directement dans le chat à la fin du temps imparti."
 
-## 3. Sécurité Cognitive et Anti-Triche
-8. **Cécité IA (Zero AI Meta-References) :** STRICTEMENT INTERDIT de mentionner des outils d'IA (NotebookLM, Windsurf, Gemini, prompts) dans les supports, le code ou les commits.
-9. **Authenticité du Code (Verbatim) :** Le code du dossier Legacy (`00_Reference_Client/`) doit être le code exact fourni par le client. Le fichier `.sln` doit être renommé en `.sln.legacy` pour sécuriser la compilation.
-10. **Sanctuarisation des Solutions :** 
-    - Ne JAMAIS placer les dossiers de solution en local chez les stagiaires.
-    - Ne JAMAIS mettre de lien vers la solution à l'intérieur du Workbook stagiaire (cela détruit la difficulté désirable).
-    - Les solutions sont des URL Web (`main` sur GitHub) que le formateur partage manuellement dans le chat UNIQUEMENT à la fin du temps imparti.
-11. **Visualisation Pédagogique :** Intégrer systématiquement des diagrammes Mermaid (classDiagram, sequenceDiagram, architecture) dans les Workbooks et les Solutions pour schématiser les concepts complexes et réduire la charge cognitive.
+## 3. Architecture et Logistique Git (Zéro Friction)
+6. **Branche Unique (main) :** Une seule branche. Les stagiaires clonent `main`.
+7. **Sanctuarisation des Solutions (Drive Externe) :** Le repo Git ne contient AUCUNE solution. Elles sont sur le Drive privé du formateur.
+8. **Partage Zéro Charge Cognitive :** Le formateur glisse-dépose la solution depuis son Drive dans le chat à la fin de l'atelier.
+9. **Racine Immaculée :** La racine du projet Git ne contient que le README et les dossiers chiffrés.
