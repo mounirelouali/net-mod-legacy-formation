@@ -1,95 +1,103 @@
-# Workbook Stagiaire - ValidFlow
+## Session 10h40 : Scaffolding de la Clean Architecture
 
-## Session 10h40 : Création de la Clean Architecture (.NET 8)
+### 🧠 1. Fondations Théoriques : L'Inversion de Dépendance
 
-**Votre Mission :** Recréer la coquille vide pour le nouveau projet `ValidFlow.Modern`.
+Le diagnostic de notre ancien batch monolithique est sans appel : le code métier est collé à la base de données et à l'envoi d'e-mails, ce qui le rend impossible à tester et à faire évoluer.
 
-**Commandes CLI à exécuter (depuis le dossier `02_Atelier_Stagiaires/ValidFlow.Modern/`) :**
+La **Clean Architecture** résout ce problème en séparant le code en plusieurs couches (projets) avec une règle stricte : **Les dépendances pointent toujours vers l'intérieur**.
 
+* **Le projet `Domain` (le cœur métier)** : C'est une zone stérile. Il ne doit avoir AUCUNE dépendance externe (ni SQL, ni SMTP, ni framework web). Il ne connaît que le langage C# pur.
+* **Les couches externes (`Infrastructure`, `Console`)** : Elles dépendent du `Domain` pour fonctionner. L'Infrastructure s'adapte au métier, et non l'inverse.
+
+### 📊 2. Modélisation de l'Architecture Cible (TO-BE)
+
+Voici le schéma des dépendances que nous allons construire ensemble. Remarquez comment l'Infrastructure et les Services pointent vers le Domain.
+
+```mermaid
+flowchart TD
+    Console[ValidFlow.Console<br>Point d'entrée] -->|Assemble| Infra(ValidFlow.Infrastructure<br>SQL, SMTP)
+    Console -->|Appelle| App(ValidFlow.Application.Services<br>Cas d'usage)
+    
+    Infra -->|Implémente| Domain{ValidFlow.Domain<br>Règles Pures}
+    App -->|Orchestre| Domain
+    
+    Tests[ValidFlow.Tests<br>Sécurité] -.->|Teste| Domain
+
+```
+
+### 🎯 3. Votre Mission : Les Étapes de la Démonstration (45 min)
+
+À vous de jouer ! Reproduisez les étapes montrées par le formateur pour créer la coquille vide du projet `ValidFlow.Modern`.
+
+**Étape 1 : Création de la Solution globale**
+
+1. Ouvrez un terminal dans le dossier `02_Atelier_Stagiaires/`.
+2. Créez un dossier pour la nouvelle architecture et entrez dedans :
 ```bash
-# 1. Création de la solution
+mkdir ValidFlow.Modern
+cd ValidFlow.Modern
+
+```
+
+
+3. Créez le fichier de solution globale :
+```bash
 dotnet new sln -n ValidFlow.Modern
 
-# 2. Création des 5 projets
+```
+
+
+
+**Étape 2 : Création des 5 projets (Les couches)**
+Tapez les commandes suivantes pour générer les briques de notre architecture :
+
+```bash
 dotnet new classlib -n ValidFlow.Domain
 dotnet new classlib -n ValidFlow.Infrastructure
 dotnet new classlib -n ValidFlow.Application.Services
 dotnet new console -n ValidFlow.Console
 dotnet new xunit -n ValidFlow.Tests
 
-# 3. Ajout à la solution
+```
+
+**Étape 3 : Intégration à la Solution**
+Liez ces nouveaux projets à votre fichier `.sln` :
+
+```bash
 dotnet sln add ValidFlow.Domain
 dotnet sln add ValidFlow.Infrastructure
 dotnet sln add ValidFlow.Application.Services
 dotnet sln add ValidFlow.Console
 dotnet sln add ValidFlow.Tests
 
-# 4. Ajout des références (Dépendances)
+```
+
+**Étape 4 : Gestion des Dépendances (L'Inversion de Contrôle)**
+C'est l'étape la plus critique. Appliquez les flèches de notre diagramme Mermaid :
+
+1. L'Infrastructure et l'Application dépendent du Domain :
+```bash
 dotnet add ValidFlow.Infrastructure reference ValidFlow.Domain
 dotnet add ValidFlow.Application.Services reference ValidFlow.Domain
+
+```
+
+
+2. Le point d'entrée (Console) assemble le tout au démarrage :
+```bash
 dotnet add ValidFlow.Console reference ValidFlow.Infrastructure
 dotnet add ValidFlow.Console reference ValidFlow.Application.Services
-dotnet add ValidFlow.Tests reference ValidFlow.Domain
-dotnet add ValidFlow.Tests reference ValidFlow.Application.Services
-dotnet add ValidFlow.Tests reference ValidFlow.Infrastructure
 
-# 5. Ajout des packages NuGet essentiels
-dotnet add ValidFlow.Infrastructure package Microsoft.EntityFrameworkCore
-dotnet add ValidFlow.Infrastructure package Microsoft.EntityFrameworkCore.SqlServer
-dotnet add ValidFlow.Infrastructure package MailKit
+```
 
-dotnet add ValidFlow.Console package Microsoft.Extensions.Configuration
-dotnet add ValidFlow.Console package Microsoft.Extensions.Configuration.Json
-dotnet add ValidFlow.Console package Microsoft.Extensions.DependencyInjection
-dotnet add ValidFlow.Console package Microsoft.Extensions.Hosting
 
-dotnet add ValidFlow.Tests package Moq
-dotnet add ValidFlow.Tests package FluentAssertions
 
-# 6. Vérification
+**Étape 5 : Validation**
+Vérifiez que toute votre coquille s'assemble correctement sans erreur :
+
+```bash
 dotnet build
-```
-
----
-
-## Architecture Cible
 
 ```
-ValidFlow.Modern/
-├─ ValidFlow.sln
-├─ ValidFlow.Domain/            (Logique métier pure - ZÉRO dépendance)
-├─ ValidFlow.Infrastructure/    (Implémentations techniques - dépend de Domain)
-├─ ValidFlow.Application.Services/ (Orchestration - dépend de Domain)
-├─ ValidFlow.Console/           (Point d'entrée - dépend de Application + Infrastructure)
-└─ ValidFlow.Tests/             (Tests - dépend de tout)
-```
 
----
-
-## Principes Clean Architecture
-
-1. **Domain au centre** : Aucune dépendance externe
-2. **Infrastructure implémente** : Les interfaces définies par Domain
-3. **Application orchestre** : Coordonne Domain + Infrastructure
-4. **Console configure** : DI + Configuration uniquement
-5. **Tests couvrent** : Toutes les couches
-
----
-
-## Checkpoint de Validation
-
-Après avoir exécuté toutes les commandes, vérifiez :
-
-- [ ] `dotnet build` réussit sans erreur
-- [ ] 5 projets créés
-- [ ] Références configurées correctement
-- [ ] Packages NuGet installés
-
----
-
-**Durée estimée** : 15 minutes  
-**Prochaine étape** : Migration du code Legacy vers l'architecture moderne
-
----
-
-> 💡 **Correction :** [Voir le script complet sur GitHub](https://github.com/mounirelouali/net-mod-legacy-formation/blob/main/Solutions_Web_Reference/Solution_10h40_Architecture.md)
+> 💡 **Correction :** Le formateur partagera le fichier de correction officiel (contenant le script complet) directement dans le chat de la visioconférence à la fin du temps imparti.
