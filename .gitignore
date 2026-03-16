@@ -98,3 +98,14 @@ coverage/
 .Spotlight-V100
 .Trashes
 ._*
+
+# --- SECURITY & AI SHIELD ---
+.windsurf/
+.cursor/
+.cursorrules
+.vscode/
+.meta_formation/
+Solutions_A_Partager_Chat/
+J1_Master_*.md
+*.ai
+# ----------------------------
