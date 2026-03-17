@@ -126,23 +126,25 @@ public record Client
 Créez le fichier `Interfaces/IValidationRule.cs` :
 
 ```csharp
-// ValidFlow.Domain/Interfaces/IValidationRule.cs
+// ==========================================================================================
+// FICHIER : ValidFlow.Domain/Interfaces/IValidationRule.cs
+// ==========================================================================================
+
+// Déclaration de l'espace de noms (namespace) selon la syntaxe moderne (C# 10+).
+// Tout le code qui suit dans ce fichier appartiendra à "ValidFlow.Domain.Interfaces".
 namespace ValidFlow.Domain.Interfaces;
 
-/// <summary>
-/// Interface de règle de validation - Abstraction pure
-/// Inspirée de IRule du code legacy, mais modernisée
-/// </summary>
+/* Le "Contrat" de base. Toute règle de validation devra obligatoirement 
+ * implémenter ces deux méthodes pour être considérée comme une "IValidationRule".
+ */
 public interface IValidationRule
 {
-    /// <summary>
-    /// Vérifie si la valeur respecte la règle
-    /// </summary>
+    // Le '?' après 'string' est une fonctionnalité de C# 8 (Nullable Reference Types).
+    // Il indique explicitement que la variable 'value' a le droit d'être 'null'.
+    // Cela force le développeur qui code la règle à gérer le cas où la valeur n'existe pas.
     bool IsValid(string? value);
     
-    /// <summary>
-    /// Retourne le message d'erreur formaté
-    /// </summary>
+    // Méthode qui renverra le message d'erreur si IsValid a retourné 'false'.
     string GetErrorMessage(string fieldName);
 }
 ```
@@ -154,23 +156,50 @@ public interface IValidationRule
 Créez le fichier `ValueObjects/MinLengthRule.cs` :
 
 ```csharp
-// ValidFlow.Domain/ValueObjects/MinLengthRule.cs
+// ==========================================================================================
+// FICHIER : ValidFlow.Domain/ValueObjects/MinLengthRule.cs
+// ==========================================================================================
+
 namespace ValidFlow.Domain.ValueObjects;
 
 using ValidFlow.Domain.Interfaces;
 
-/// <summary>
-/// Règle de longueur minimale - Utilise le Pattern Matching C# 12
-/// </summary>
+/* Un "record" en C# (depuis C# 9) est une classe spéciale optimisée pour représenter des données.
+ * Il est IMMUABLE par défaut : une fois créé, on ne peut plus modifier "MinLength".
+ * La syntaxe "(int MinLength)" est un constructeur "positionnel".
+ * Le compilateur va automatiquement créer une propriété "MinLength" en lecture seule.
+ * Le ":" signifie que ce record implémente l'interface "IValidationRule".
+ */
 public record MinLengthRule(int MinLength) : IValidationRule
 {
+    /* Implémentation de la méthode IsValid de l'interface.
+     * On utilise ici une expression "switch" (introduite dans C# 8), qui est 
+     * beaucoup plus puissante et concise qu'une suite de "if / else if / else".
+     * L'opérateur "=>" (expression-bodied member) signifie "cette méthode retourne le résultat de ce switch".
+     */
     public bool IsValid(string? value) => value switch
     {
+        // CAS 1 : Si la chaîne de caractères est 'null' OU si elle est vide ("").
+        // On retourne immédiatement 'false' (la règle n'est pas respectée).
         null or "" => false,
+
+        // CAS 2 : Le "Property Pattern Matching" (Filtrage par motif de propriété).
+        // Si 'value' n'est pas null, on va regarder sa propriété "Length".
+        // "{ Length: var len }" veut dire : "Prends la valeur de value.Length et mets-la dans une variable temporaire 'len'".
+        // "when len >= MinLength" est une condition supplémentaire (une garde) : "...et vérifie que 'len' est supérieur ou égal au minimum requis".
+        // Si tout ça est vrai, on retourne 'true'.
         { Length: var len } when len >= MinLength => true,
+
+        // CAS 3 : Le cas par défaut (le "default" d'un switch classique).
+        // L'underscore "_" (discard) signifie "pour tout ce qui n'a pas été intercepté par les cas précédents".
+        // Ici, cela capture les chaînes de caractères qui sont valides (ni nulles, ni vides) mais dont la longueur est inférieure à MinLength.
         _ => false
     };
     
+    /* Le signe '$' avant les guillemets permet de faire de l'"Interpolation de chaîne".
+     * Cela permet d'insérer directement des variables entre accolades { } dans le texte, 
+     * au lieu de faire de la concaténation "texte" + variable + "texte".
+     */
     public string GetErrorMessage(string fieldName) => 
         $"Le champ '{fieldName}' doit contenir au moins {MinLength} caractères.";
 }
@@ -179,16 +208,21 @@ public record MinLengthRule(int MinLength) : IValidationRule
 Créez le fichier `ValueObjects/MandatoryRule.cs` :
 
 ```csharp
-// ValidFlow.Domain/ValueObjects/MandatoryRule.cs
+// ==========================================================================================
+// FICHIER : ValidFlow.Domain/ValueObjects/MandatoryRule.cs
+// ==========================================================================================
+
 namespace ValidFlow.Domain.ValueObjects;
 
 using ValidFlow.Domain.Interfaces;
 
-/// <summary>
-/// Règle de champ obligatoire - Pattern Matching avec 'not'
-/// </summary>
+/* Règle de champ obligatoire - Démonstration de l'opérateur 'is not' de C# 9
+ * Cette règle est plus simple car elle n'a pas de paramètre (pas de longueur minimum à gérer).
+ */
 public record MandatoryRule : IValidationRule
 {
+    // L'opérateur 'is not' permet d'inverser la logique de pattern matching.
+    // Ici : "la valeur est valide SI elle n'est PAS (null ou vide)".
     public bool IsValid(string? value) => value is not (null or "");
     
     public string GetErrorMessage(string fieldName) => 
