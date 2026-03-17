@@ -18,6 +18,55 @@ Le diagnostic de ce matin a révélé le problème central du code legacy : **la
 
 ### 📊 2. Modélisation du Domain (classDiagram)
 
+#### Diagramme 1 : L'Architecture Legacy (Le Problème)
+
+D'abord, visualisons **pourquoi** le code legacy est impossible à tester :
+
+```mermaid
+classDiagram
+    direction TB
+    
+    class Program {
+        +Main()
+        +GetDataFromDb() Dictionary
+        +SendEmail()
+        +ValidateObject()
+    }
+    
+    class IRule {
+        <<interface>>
+        +IsValid(string) bool
+        +ErrorMessage(string, string) string
+    }
+    
+    class MinLengthRule {
+        -int _minLength
+        +IsValid(string) bool
+        +ErrorMessage(string, string) string
+    }
+    
+    class SqlConnection {
+        <<external>>
+    }
+    
+    class SmtpClient {
+        <<external>>
+    }
+    
+    Program --> IRule : utilise
+    Program --> SqlConnection : dépend de
+    Program --> SmtpClient : dépend de
+    IRule <|.. MinLengthRule : implémente
+    
+    note for Program "Tout est mélangé :\n- Logique métier (IRule)\n- Accès base de données (SQL)\n- Envoi d'emails (SMTP)\n⚠️ Impossible à tester unitairement"
+```
+
+**Le problème** : Pour tester UNE règle métier, je dois lancer SQL + SMTP. C'est inacceptable.
+
+---
+
+#### Diagramme 2 : L'Architecture Cible (La Solution)
+
 Voici la structure que nous allons construire dans le projet `ValidFlow.Domain` :
 
 ```mermaid
@@ -33,24 +82,24 @@ classDiagram
     
     class IValidationRule {
         <<interface>>
-        +bool IsValid(string value)
+        +bool IsValid(string? value)
         +string GetErrorMessage(string fieldName)
     }
     
     class MinLengthRule {
         +int MinLength
-        +bool IsValid(string value)
+        +bool IsValid(string? value)
         +string GetErrorMessage(string fieldName)
     }
     
     class MaxLengthRule {
         +int MaxLength
-        +bool IsValid(string value)
+        +bool IsValid(string? value)
         +string GetErrorMessage(string fieldName)
     }
     
     class MandatoryRule {
-        +bool IsValid(string value)
+        +bool IsValid(string? value)
         +string GetErrorMessage(string fieldName)
     }
     
@@ -60,9 +109,11 @@ classDiagram
     
     Client ..> IValidationRule : utilise
     
-    note for Client "Entité métier pure\n(record C# 12)"
-    note for IValidationRule "Abstraction dans Domain\nZéro dépendance externe"
+    note for Client "Entité métier pure\n(record C# 12)\n✅ Zéro dépendance externe"
+    note for IValidationRule "Abstraction dans Domain\n✅ Testable en isolation (10ms)"
 ```
+
+**La solution** : Le Domain est 100% pur. Je peux tester `MinLengthRule` en 10ms sans base de données ni serveur mail.
 
 ### 🎯 3. Votre Mission : Migration du Legacy vers le Domain (45 min)
 
