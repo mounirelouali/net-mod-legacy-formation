@@ -1,3 +1,5 @@
+# Workbook Stagiaire - ValidFlow
+
 ## Session 10h40 : Scaffolding de la Clean Architecture
 
 ### 🧠 1. Fondations Théoriques : L'Inversion de Dépendance
