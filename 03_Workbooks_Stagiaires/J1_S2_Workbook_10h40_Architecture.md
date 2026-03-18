@@ -1,108 +1,142 @@
 # Workbook Stagiaire - ValidFlow
 
-## Session 09h00 : Analyse de l'existant
+## Session 10h40 : Scaffolding Clean Architecture
 
 ---
 
-## 📥 Préparation de l'Environnement
+## 🎯 Objectif de la Session
 
-> **⚙️ Setup Initial - À faire MAINTENANT**
-
-Avant de commencer l'analyse, vous devez cloner le repository de formation qui contient le code legacy à auditer.
-
-### Étapes d'Installation
-
-**1. Créer le dossier de travail** :
-```bash
-cd C:\dev
-```
-*(Si le dossier `C:\dev` n'existe pas, créez-le d'abord : `mkdir C:\dev`)*
-
-**2. Cloner le repository GitHub** :
-```bash
-git clone https://github.com/mounirelouali/net-mod-legacy-formation.git
-cd net-mod-legacy-formation
-```
-
-**3. Ouvrir le projet dans Visual Studio Code** :
-```bash
-code .
-```
-
-**4. Explorer la structure** :
-```
-net-mod-legacy-formation/
-├── README.md (contexte métier)
-├── 00_Reference_Client/generationxml/ (code legacy client)
-├── 02_Atelier_Stagiaires/ValidFlow.Legacy/ (votre code à moderniser)
-└── 03_Workbooks_Stagiaires/ (vos guides)
-```
-
-> ✅ **Checkpoint** : Vous devez voir le fichier `README.md` ouvert dans VS Code avant de continuer.
+Créer la **coquille vide** de l'architecture Clean Architecture pour le projet ValidFlow.Modern. À la fin de cette session, vous aurez 5 projets .NET 8 correctement référencés.
 
 ---
 
-### 🧠 1. Fondations Théoriques : La Dette Technique
+## 🧠 1. Fondations Théoriques : Clean Architecture
 
-Un "batch" legacy accumule de la dette technique avec le temps. Avant de refactoriser, il faut auditer le code pour prouver qu'il viole les standards modernes.
-
-Notre application extrait des données SQL, les valide selon des règles métier, et génère un XML ou envoie un e-mail en cas d'erreur.
-
-**Les 5 catégories d'anti-patterns à identifier :**
-
-| Catégorie | Question clé |
-|-----------|--------------|
-| 🔓 **Sécurité** | Y a-t-il des secrets en clair ? |
-| 🐌 **Performance** | Le code bloque-t-il le thread ? |
-| 💥 **Robustesse** | Y a-t-il des gestions d'erreur ? |
-| 🔧 **Maintenabilité** | Le code est-il testable ? |
-| 📦 **Déploiement** | L'app est-elle portable ? |
-
----
-
-### 📊 2. Modélisation du Workflow (AS-IS)
+### Le Principe d'Inversion de Dépendance
 
 ```mermaid
 graph TD
-    InputDB[(SQL Server)] -->|Lecture synchrone| ProcessStart(Program.cs)
-    ProcessStart --> Validation{Validation Métier}
-    Validation -->|Erreur| OutputEmail[>Alerte SMTP couplée]
-    Validation -->|Succès| OutputXML[/Fichier XML/]
+    Console[Console<br/>Point d'entrée] --> AppServices[Application.Services<br/>Orchestration]
+    Console --> Infra[Infrastructure<br/>Implémentations]
+    AppServices --> Domain[Domain<br/>Cœur Métier]
+    Infra --> Domain
+    Tests[Tests<br/>Validation] --> Domain
+    Tests --> AppServices
     
-    style InputDB fill:#f8d7da,stroke:#dc3545
-    style ProcessStart fill:#fff3cd,stroke:#856404
-    style Validation fill:#cce5ff,stroke:#004085
+    style Domain fill:#d4edda,stroke:#28a745,stroke-width:3px
+    style Console fill:#fff3cd,stroke:#856404
+    style Infra fill:#f8d7da,stroke:#dc3545
+    style AppServices fill:#cce5ff,stroke:#004085
 ```
 
-**Observation :** Tout est mélangé dans un seul fichier `Program.cs`. C'est le monolithe.
+**Règle d'or** : Les flèches pointent TOUJOURS vers le Domain. Le Domain ne dépend de RIEN.
+
+### Les 5 Projets Cibles
+
+| Projet | Rôle | Dépendances |
+|--------|------|-------------|
+| **ValidFlow.Domain** | Cœur métier pur (entités, interfaces) | AUCUNE |
+| **ValidFlow.Infrastructure** | Implémentations (SQL, SMTP, fichiers) | Domain |
+| **ValidFlow.Application.Services** | Orchestration (use cases) | Domain |
+| **ValidFlow.Console** | Point d'entrée + Injection de dépendances | Infrastructure, Application.Services |
+| **ValidFlow.Tests** | Tests unitaires | Domain, Application.Services |
 
 ---
 
-### 🎯 3. Votre Mission (15 min)
+## 🎯 2. Votre Mission (45 min)
 
-**Objectif :** Identifier les 5 anti-patterns critiques dans le code Legacy.
+### Étape 1 : Créer la Solution et le Domain
 
-**Actions :**
+Ouvrez un terminal dans le dossier `02_Atelier_Stagiaires/` et exécutez :
 
-1. Ouvrez le fichier `02_Atelier_Stagiaires/ValidFlow.Legacy/Start/Program.cs`.
-2. Pour chaque catégorie du tableau ci-dessus, trouvez le code problématique.
-3. Notez les **numéros de ligne exacts** pour chaque problème.
-
-**Format de réponse attendu :**
+```bash
+cd 02_Atelier_Stagiaires
+dotnet new sln -n ValidFlow.Modern
+dotnet new classlib -n ValidFlow.Domain
+dotnet sln add ValidFlow.Domain
 ```
-#1 Sécurité : Ligne XX - Description du problème
-#2 Performance : Ligne XX - Description du problème
-...
+
+> ❓ **Question** : Dans le projet Domain, quels packages NuGet avez-vous le droit d'installer ?  
+> **Réponse** : AUCUN. Le Domain est une zone stérile. Zéro dépendance externe.
+
+---
+
+### Étape 2 : Créer les Couches Externes
+
+```bash
+dotnet new classlib -n ValidFlow.Infrastructure
+dotnet new classlib -n ValidFlow.Application.Services
+dotnet new console -n ValidFlow.Console
+dotnet new xunit -n ValidFlow.Tests
+
+dotnet sln add ValidFlow.Infrastructure
+dotnet sln add ValidFlow.Application.Services
+dotnet sln add ValidFlow.Console
+dotnet sln add ValidFlow.Tests
 ```
 
 ---
 
-### ✅ Checkpoint de Validation
+### Étape 3 : Configurer les Références (CRITIQUE)
+
+C'est ici que Clean Architecture prend forme :
+
+```bash
+# Infrastructure et Application pointent vers Domain
+dotnet add ValidFlow.Infrastructure reference ValidFlow.Domain
+dotnet add ValidFlow.Application.Services reference ValidFlow.Domain
+
+# Console assemble tout (Composition Root)
+dotnet add ValidFlow.Console reference ValidFlow.Infrastructure
+dotnet add ValidFlow.Console reference ValidFlow.Application.Services
+
+# Tests valident Domain et Application
+dotnet add ValidFlow.Tests reference ValidFlow.Domain
+dotnet add ValidFlow.Tests reference ValidFlow.Application.Services
+```
+
+> ❓ **Question** : Pourquoi le Console référence-t-il Infrastructure alors qu'il ne contient aucune logique métier ?  
+> **Réponse** : Parce que le Console est le "Composition Root". C'est le seul endroit où l'on configure l'Injection de Dépendances au démarrage.
+
+---
+
+### Étape 4 : Valider le Build
+
+```bash
+dotnet build
+```
+
+**Résultat attendu** :
+```
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+```
+
+---
+
+## 📁 3. Structure Finale Attendue
+
+```
+02_Atelier_Stagiaires/
+├── ValidFlow.Legacy/          (code existant - NE PAS TOUCHER)
+├── ValidFlow.Modern.sln       ✅ Nouveau
+├── ValidFlow.Domain/          ✅ Nouveau
+├── ValidFlow.Infrastructure/  ✅ Nouveau
+├── ValidFlow.Application.Services/ ✅ Nouveau
+├── ValidFlow.Console/         ✅ Nouveau
+└── ValidFlow.Tests/           ✅ Nouveau
+```
+
+---
+
+## ✅ Checkpoint de Validation
 
 Avant de demander la correction, vérifiez que vous avez :
-- [ ] Identifié les 5 problèmes
-- [ ] Noté les numéros de ligne exacts
-- [ ] Compris l'impact métier de chaque problème
+- [ ] 5 projets créés dans la solution
+- [ ] `dotnet build` réussit sans erreur
+- [ ] Les références pointent vers Domain (pas l'inverse)
+- [ ] Aucun package NuGet dans Domain
 
 ---
 
