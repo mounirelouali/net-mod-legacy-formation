@@ -293,66 +293,249 @@ public record MandatoryRule : IValidationRule
 
 ---
 
-**Étape 5 : Création d'un test unitaire**
+**Étape 5 : Création des tests unitaires (Le Filet de Sécurité)**
+
+> 💡 **Pourquoi tester ?** Un test unitaire est un programme qui vérifie automatiquement qu'une partie de votre code fonctionne correctement. C'est votre filet de sécurité : si vous modifiez le code et cassez quelque chose, le test devient rouge immédiatement.
+
+---
+
+**5.1 - Test de l'entité Client**
 
 Dans le projet `ValidFlow.Tests/`, créez le fichier `ClientTests.cs` :
 
 ```csharp
-// ValidFlow.Tests/ClientTests.cs
+// ==========================================================================================
+// FICHIER : ValidFlow.Tests/ClientTests.cs
+// ==========================================================================================
+
+// Déclaration du namespace (espace de noms) pour organiser le code
 namespace ValidFlow.Tests;
 
-using ValidFlow.Domain.Entities;
-using Xunit;
+// Import des classes nécessaires
+using ValidFlow.Domain.Entities;  // Pour accéder à la classe Client
+using Xunit;                       // Framework de test unitaire (comme NUnit ou MSTest)
 
+// Classe de tests pour l'entité Client
 public class ClientTests
 {
+    // Premier test : vérifier qu'un client VALIDE est bien détecté comme valide
+    // [Fact] signifie "test simple qui s'exécute une seule fois"
     [Fact]
     public void Client_WithValidData_ShouldBeValid()
     {
-        // Arrange
+        // ARRANGE (Préparation) : Je crée un client avec des données correctes
         var client = new Client 
         { 
-            Id = "CLT-001", 
-            Name = "Acme Corporation", 
-            Email = "contact@acme.com" 
+            Id = "CLT-001",                 // ID correct
+            Name = "Acme Corporation",      // Nom >= 2 caractères ✓
+            Email = "contact@acme.com"      // Email contient '@' ✓
         };
         
-        // Act & Assert
+        // ACT (Action) : J'appelle la méthode IsValid()
+        // ASSERT (Vérification) : Je vérifie que le résultat est TRUE
         Assert.True(client.IsValid());
+        // Si IsValid() retourne FALSE, le test échoue (devient rouge)
     }
     
+    // Deuxième test : vérifier qu'un client INVALIDE est bien détecté comme invalide
+    // [Theory] signifie "test paramétré qui s'exécute PLUSIEURS fois avec des données différentes"
+    // Chaque [InlineData] va lancer le test une fois avec les valeurs indiquées
     [Theory]
-    [InlineData("", "test@email.com")]      // Nom vide
-    [InlineData("A", "test@email.com")]     // Nom trop court
-    [InlineData("Acme", "invalid-email")]   // Email sans @
+    [InlineData("", "test@email.com")]           // CAS 1 : Nom vide (invalide)
+    [InlineData("A", "test@email.com")]          // CAS 2 : Nom trop court (1 caractère, min=2)
+    [InlineData("Acme", "invalid-email")]        // CAS 3 : Email sans '@' (invalide)
     public void Client_WithInvalidData_ShouldBeInvalid(string name, string email)
     {
-        // Arrange
+        // ARRANGE : Je crée un client avec les données passées en paramètre
+        // Ces données viennent des [InlineData] au-dessus
         var client = new Client 
         { 
-            Id = "CLT-001", 
-            Name = name, 
-            Email = email 
+            Id = "CLT-001",     // L'ID est toujours valide
+            Name = name,        // Le nom vient du paramètre (vide, "A", ou "Acme")
+            Email = email       // L'email vient du paramètre
         };
         
-        // Act & Assert
+        // ACT & ASSERT : Je vérifie que le client est détecté comme INVALIDE
         Assert.False(client.IsValid());
+        // Si IsValid() retourne TRUE (alors qu'il devrait retourner FALSE), le test échoue
     }
 }
 ```
 
 ---
 
-**Étape 6 : Ajout de la référence et validation**
+**5.2 - Tests des règles de validation**
+
+Créez le fichier `ValidationRulesTests.cs` pour tester les règles MinLengthRule, MaxLengthRule et MandatoryRule :
+
+```csharp
+// ==========================================================================================
+// FICHIER : ValidFlow.Tests/ValidationRulesTests.cs
+// ==========================================================================================
+
+namespace ValidFlow.Tests;
+
+using ValidFlow.Domain.ValueObjects;
+using Xunit;
+
+// Classe de tests pour la règle MinLengthRule
+public class MinLengthRuleTests
+{
+    [Fact]
+    public void IsValid_WithNullValue_ShouldReturnFalse()
+    {
+        // ARRANGE : Je crée une règle qui exige minimum 2 caractères
+        var rule = new MinLengthRule(MinLength: 2);
+        
+        // ACT : Je teste avec une valeur NULL
+        bool result = rule.IsValid(null);
+        
+        // ASSERT : NULL ne doit PAS passer la validation (retourne FALSE)
+        Assert.False(result);
+        // Ce test vérifie aussi que le code ne plante PAS avec une NullReferenceException
+    }
+    
+    // [Theory] permet de tester PLUSIEURS scénarios d'un coup
+    [Theory]
+    [InlineData("", false)]           // CAS 1 : Chaîne vide → invalide
+    [InlineData("A", false)]          // CAS 2 : 1 caractère (< 2) → invalide
+    [InlineData("AB", true)]          // CAS 3 : Exactement 2 caractères → VALIDE
+    [InlineData("ABC", true)]         // CAS 4 : Plus de 2 caractères → VALIDE
+    public void IsValid_WithVariousLengths_ShouldReturnExpectedResult(
+        string value,      // La valeur à tester
+        bool expected)     // Le résultat attendu (true ou false)
+    {
+        // ARRANGE
+        var rule = new MinLengthRule(MinLength: 2);
+        
+        // ACT
+        bool result = rule.IsValid(value);
+        
+        // ASSERT : Je compare le résultat obtenu avec le résultat attendu
+        Assert.Equal(expected, result);
+        // Si result != expected, le test échoue
+    }
+    
+    [Fact]
+    public void GetErrorMessage_ShouldReturnFormattedMessage()
+    {
+        // ARRANGE
+        var rule = new MinLengthRule(MinLength: 3);
+        
+        // ACT : Je récupère le message d'erreur pour le champ "Nom"
+        string message = rule.GetErrorMessage("Nom");
+        
+        // ASSERT : Je vérifie que le message contient bien les bonnes informations
+        Assert.Equal("Le champ 'Nom' doit contenir au moins 3 caractères.", message);
+    }
+}
+
+// Classe de tests pour la règle MaxLengthRule
+public class MaxLengthRuleTests
+{
+    [Theory]
+    [InlineData(null, true)]          // NULL est autorisé (champ optionnel)
+    [InlineData("", true)]            // Chaîne vide autorisée
+    [InlineData("AB", true)]          // 2 caractères (< 10) → VALIDE
+    [InlineData("ABCDEFGHIJ", true)]  // Exactement 10 caractères → VALIDE
+    [InlineData("ABCDEFGHIJK", false)] // 11 caractères (> 10) → INVALIDE
+    public void IsValid_WithVariousLengths_ShouldReturnExpectedResult(
+        string value, 
+        bool expected)
+    {
+        // ARRANGE : Règle qui autorise maximum 10 caractères
+        var rule = new MaxLengthRule(MaxLength: 10);
+        
+        // ACT
+        bool result = rule.IsValid(value);
+        
+        // ASSERT
+        Assert.Equal(expected, result);
+    }
+    
+    [Fact]
+    public void GetErrorMessage_ShouldReturnFormattedMessage()
+    {
+        // ARRANGE
+        var rule = new MaxLengthRule(MaxLength: 50);
+        
+        // ACT
+        string message = rule.GetErrorMessage("Email");
+        
+        // ASSERT
+        Assert.Equal("Le champ 'Email' ne doit pas dépasser 50 caractères.", message);
+    }
+}
+
+// Classe de tests pour la règle MandatoryRule (champ obligatoire)
+public class MandatoryRuleTests
+{
+    [Theory]
+    [InlineData(null, false)]         // NULL → INVALIDE (champ obligatoire)
+    [InlineData("", false)]           // Chaîne vide → INVALIDE
+    [InlineData("   ", true)]         // Espaces (la règle ne vérifie que null/vide)
+    [InlineData("Valeur", true)]      // Valeur présente → VALIDE
+    public void IsValid_WithVariousValues_ShouldReturnExpectedResult(
+        string value, 
+        bool expected)
+    {
+        // ARRANGE
+        var rule = new MandatoryRule();
+        
+        // ACT
+        bool result = rule.IsValid(value);
+        
+        // ASSERT
+        Assert.Equal(expected, result);
+    }
+    
+    [Fact]
+    public void GetErrorMessage_ShouldReturnFormattedMessage()
+    {
+        // ARRANGE
+        var rule = new MandatoryRule();
+        
+        // ACT
+        string message = rule.GetErrorMessage("Email");
+        
+        // ASSERT
+        Assert.Equal("Le champ 'Email' est obligatoire.", message);
+    }
+}
+```
+
+> 💡 **Comprendre la structure Arrange-Act-Assert (AAA)**
+> - **Arrange** : Je prépare les données (créer un objet, définir des variables)
+> - **Act** : J'exécute l'action à tester (appeler une méthode)
+> - **Assert** : Je vérifie que le résultat est celui attendu
+
+> 💡 **[Fact] vs [Theory]**
+> - **[Fact]** : Test simple qui s'exécute 1 fois
+> - **[Theory]** : Test paramétré qui s'exécute N fois (1 fois par [InlineData])
+
+---
+
+**Étape 6 : Ajout de la référence de projet (CRITIQUE)**
+
+> ⚠️ **Avant de lancer les tests**, le projet `ValidFlow.Tests` doit référencer `ValidFlow.Domain`.
 
 1. Ajoutez la référence du projet `Domain` au projet `Tests` :
 
 ```bash
-cd ..
-dotnet add ValidFlow.Tests reference ValidFlow.Domain
+cd 02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Tests
+dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
 ```
 
-2. Exécutez les tests pour valider votre travail :
+2. Vérifiez que le fichier `.csproj` contient maintenant la référence :
+
+```xml
+<!-- ValidFlow.Tests.csproj -->
+<ItemGroup>
+  <ProjectReference Include="..\ValidFlow.Domain\ValidFlow.Domain.csproj" />
+</ItemGroup>
+```
+
+3. Exécutez les tests pour valider votre travail :
 
 ```bash
 dotnet test
@@ -360,7 +543,7 @@ dotnet test
 
 **Résultat attendu :**
 ```
-Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2
+Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: < 100 ms
 ```
 
 ---

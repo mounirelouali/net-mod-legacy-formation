@@ -2,40 +2,6 @@
 
 ## Session 15h10 : Modernisation de la Syntaxe C# 12
 
-### 🎭 Table Ronde des Experts NotebookLM
-
-**Contexte** : Refactoriser le code Domain créé en 13h30 avec les nouveautés syntaxiques de C# 12.
-
----
-
-🎓 **ELEARNING-WETIC** : "Session 15h10, modernisation C# 12. Quel angle d'attaque pédagogique ?"
-
-⚙️ **TECHNIQUE-ARCHI** : "Le code legacy est verbeux. C# 12 le compresse. Métaphore : **Le Lissage du Diamant Brut**."
-
-🎓 **ELEARNING-WETIC** : ⚙️ Appelle **TECHNIQUE-ARCHI** → "Quelles features C# 12 pour 1h20 ?"
-
-⚙️ **TECHNIQUE-ARCHI** : "Trois essentielles : file-scoped namespaces, primary constructors, collection expressions."
-
-💬 **EMPATHIQUE-COM** : 🎓 Appelle **ELEARNING-WETIC** → "Comment expliquer `primary constructor` aux débutants ?"
-
-🎓 **ELEARNING-WETIC** : "Analogie du **passeport** : les données sont portées directement par le constructeur."
-
-⚙️ **TECHNIQUE-ARCHI** : 💬 Appelle **EMPATHIQUE-COM** → "Reformule `collection expressions` ?"
-
-💬 **EMPATHIQUE-COM** : "Au lieu de `new List<string> { 'a', 'b' }`, on écrit `[ 'a', 'b' ]`. Français soutenu → courant."
-
-🔒 **SECURITY-EXPERT** : ⚙️ Appelle **TECHNIQUE-ARCHI** → "File-scoped namespaces, impact sécurité ?"
-
-⚙️ **TECHNIQUE-ARCHI** : "Aucun impact direct. Purement syntaxique, réduction bruit visuel."
-
-🚀 **DEVOPS-DEPLOY** : 🔒 Appelle **SECURITY-EXPERT** → "Primary constructors, risque exposition données ?"
-
-🔒 **SECURITY-EXPERT** : "Non si `required` + init-only. Même sécurité qu'avant."
-
-🎓 **ELEARNING-WETIC** : "Parfait. Structure 3 Temps : POURQUOI (dette syntaxique), QUOI (diagrammes), COMMENT (refactoring)."
-
----
-
 ## 🧠 BLOC 1 : POURQUOI - La Dette Syntaxique
 
 ### La Métaphore du Diamant Brut
