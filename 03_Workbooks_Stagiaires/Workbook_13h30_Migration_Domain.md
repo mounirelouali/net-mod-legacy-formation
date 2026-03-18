@@ -1,20 +1,30 @@
-# Workbook Stagiaire - ValidFlow
+# 📘 Workbook Stagiaire - ValidFlow
 
-## Session 13h30 : Migration du Cœur Métier (Projet Domain)
+## Session 13h30 : Migration du Cœur Métier vers le Projet Domain
 
-### 🧠 1. Fondations Théoriques : Pourquoi le Domain est la Zone la Plus Importante
+> **🎯 Objectif de la Session**  
+> Extraire l'entité `Client` et les règles de validation du code legacy vers un projet `Domain` 100% pur (zéro dépendance externe), en utilisant les fonctionnalités modernes de C# 12 (records, pattern matching).
 
-Le diagnostic de ce matin a révélé le problème central du code legacy : **la logique métier est mélangée à l'infrastructure** (SQL, SMTP). Cette architecture rend le code :
+---
 
-- ❌ **Impossible à tester unitairement** : Pour tester une règle de validation, il faut une vraie base de données.
-- ❌ **Dangereux à modifier** : Changer une ligne peut casser l'envoi d'emails ou les requêtes SQL.
-- ❌ **Bloqué techniquement** : Impossible de migrer vers .NET 8, Docker ou Linux.
+## 🏝️ BLOC 1 : POURQUOI - La Métaphore de l'Île Stérile
 
-**La Clean Architecture résout ce problème** en isolant le cœur métier dans un projet `Domain` qui :
+### Le Problème du Code Legacy
 
-- ✅ **N'a AUCUNE dépendance externe** : Pas de NuGet, pas de SQL, pas de framework.
-- ✅ **Est 100% testable en isolation** : Les tests s'exécutent en millisecondes.
-- ✅ **Crée un filet de sécurité** : Vous pouvez refactoriser sans peur car les tests vous alertent immédiatement.
+Imaginez le projet Domain comme une **île stérile**. Sur cette île, rien n'entre sauf du **C# pur**. Pas de bateau SQL, pas d'avion SMTP, pas de conteneur Docker.
+
+Le diagnostic de ce matin a révélé que notre code legacy mélange **3 mondes incompatibles** :
+
+- 🗄️ **Base de données** (SqlConnection)
+- 📧 **Envoi d'emails** (SmtpClient)  
+- 🧠 **Logique métier** (IRule)
+
+**Conséquence** : Pour tester UNE règle métier (ex: "Le nom doit avoir 2 caractères minimum"), je dois :
+1. Lancer une vraie base de données SQL
+2. Configurer un serveur SMTP
+3. Exécuter TOUT le batch
+
+**Résultat** : Personne n'ose tester, les bugs partent en production.
 
 ### 📊 2. Modélisation du Domain (classDiagram)
 
