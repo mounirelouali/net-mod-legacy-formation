@@ -283,22 +283,37 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
    **Ce que vous voyez** : Les dépendances (`IClientValidator`, `IValidationRule`) sont injectées automatiquement dans l'endpoint.
 
 3. **Tester l'endpoint avec curl**
-   ```bash
+   
+   **Option A : PowerShell (recommandé Windows)** - Copier-coller directement :
+   ```powershell
    # Test avec un client valide
-   curl -X POST http://localhost:5000/api/validate \
-     -H "Content-Type: application/json" \
+   curl -X POST http://localhost:5000/api/validate `
+     -H "Content-Type: application/json" `
      -d '{"id":1,"name":"John Doe","email":"john@example.com"}'
    
-   # Résultat attendu :
-   # { "message": "Client valide", "client": { "id": 1, "name": "John Doe", "email": "john@example.com" } }
-   
    # Test avec un client invalide (nom trop court)
-   curl -X POST http://localhost:5000/api/validate \
-     -H "Content-Type: application/json" \
+   curl -X POST http://localhost:5000/api/validate `
+     -H "Content-Type: application/json" `
      -d '{"id":1,"name":"A","email":"john@example.com"}'
+   ```
    
-   # Résultat attendu :
-   # { "errors": ["Le nom doit contenir au moins 2 caractères"] }
+   **Option B : Une ligne (copier-coller rapide)** :
+   ```bash
+   # Client valide
+   curl -X POST http://localhost:5000/api/validate -H "Content-Type: application/json" -d '{"id":1,"name":"John Doe","email":"john@example.com"}'
+   
+   # Client invalide
+   curl -X POST http://localhost:5000/api/validate -H "Content-Type: application/json" -d '{"id":1,"name":"A","email":"john@example.com"}'
+   ```
+   
+   **Résultat attendu (client valide)** :
+   ```json
+   { "message": "Client valide", "client": { "id": 1, "name": "John Doe", "email": "john@example.com" } }
+   ```
+   
+   **Résultat attendu (client invalide)** :
+   ```json
+   { "errors": ["Le nom doit contenir au moins 2 caractères"] }
    ```
 
 4. **Expliquer l'injection automatique**
