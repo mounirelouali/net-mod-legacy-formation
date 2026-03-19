@@ -2,7 +2,9 @@
 
 ## 🎯 Objectif
 
-Ce dossier contient les **points de sauvegarde** du code complet et fonctionnel après chaque journée de formation.
+Ce dossier contient les **points de sauvegarde** du code complet et fonctionnel **APRÈS chaque journée** de formation.
+
+**Important** : Les checkpoints sont créés en **FIN de journée** par le formateur. Ils ne sont pas disponibles le matin du jour concerné.
 
 Si votre code ne compile pas ou si vous étiez absent, vous pouvez repartir sur une base saine en copiant le contenu du checkpoint correspondant.
 
