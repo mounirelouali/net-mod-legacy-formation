@@ -582,10 +582,446 @@ La solution détaillée sera partagée par le formateur après l'exercice :
 
 ---
 
-## ⏸️ Sessions 3-4 : En Cours de Génération
+## Session 3 - 13h30 : Implémentation du Cœur Métier (Domain)
 
-Les sessions suivantes seront ajoutées après validation de la Session 2.
+### 📢 Ouverture de Session
 
-**Prochaines Sessions** :
-- Session 3 - 13h30 : Implémentation du Cœur Métier (Domain)
+Vous avez maintenant 5 projets vides qui forment l'architecture Clean. Cette session va donner vie au **Domain** : le cœur métier de l'application.
+
+Objectif : Extraire l'entité `Client` et les 3 règles de validation du code legacy vers le projet `ValidFlow.Domain`, et les tester en **15 millisecondes** sans SQL Server ni SMTP.
+
+À la fin de cette session, vous comprendrez pourquoi le Domain isolé est la clé d'une architecture testable et maintenable.
+
+---
+
+### 🧠 Concepts Fondamentaux
+
+#### Qu'est-ce que le Domain-Driven Design (DDD) ?
+
+Le **Domain-Driven Design** (Eric Evans, 2003) place le cœur métier au centre de l'architecture. Le Domain contient :
+- **Les entités** : Objets avec une identité unique (ex: `Client` avec un `Id`)
+- **Les Value Objects** : Objets sans identité, définis par leurs propriétés (ex: `Email`, `PhoneNumber`)
+- **Les règles métier** : Logique qui change rarement et qui définit votre business (ex: "Un nom doit contenir minimum 2 caractères")
+
+**Principe Fondamental** : Le Domain ne doit **jamais** dépendre de l'infrastructure (SQL, SMTP, fichiers). C'est l'infrastructure qui dépend du Domain.
+
+---
+
+#### Entité vs Value Object
+
+| Critère | Entité | Value Object |
+|---------|--------|--------------|
+| **Identité** | Oui (Id unique) | Non (défini par valeurs) |
+| **Mutabilité** | Peut changer dans le temps | Immuable |
+| **Égalité** | Par Id | Par valeurs |
+| **Exemple** | `Client` (Id, Nom, Email) | `Email` ("john@example.com") |
+
+**En C# 12** : Utilisez `record` pour les Value Objects (immuabilité par défaut).
+
+---
+
+#### Pourquoi "Zéro Dépendance Externe" ?
+
+**Problème du Code Legacy** :
+```csharp
+// ValidFlow.Legacy/Program.cs
+public static void ValidateData() {
+    var connection = new SqlConnection(connectionString); // Dépendance SQL
+    connection.Open(); // Si SQL Server est DOWN → BOOM !
+    // ... validation + email
+}
+```
+
+**Impossible de tester** `ValidateData()` sans :
+- SQL Server lancé
+- SMTP configuré
+- Fichier XML accessible
+
+**Temps de test** : **10 minutes** (lancer infra + insérer données test)
+
+**Solution Domain Isolé** :
+```csharp
+// ValidFlow.Domain/Entities/Client.cs
+public record Client(int Id, string Name, string Email);
+
+// ValidFlow.Domain/Interfaces/IValidationRule.cs
+public interface IValidationRule {
+    bool IsValid(string value);
+}
+```
+
+**Testable en** : **15 millisecondes** (pas d'infrastructure)
+
+---
+
+### 🏗️ Architecture Legacy vs Architecture Cible
+
+#### Diagramme 1 : Legacy (Couplage Fort)
+
+```mermaid
+classDiagram
+    class ProgramLegacy {
+        +string connectionString
+        +string smtpServer
+        +ValidateData()
+        +SendEmail()
+    }
+    
+    class SqlConnection {
+        +Open()
+        +ExecuteReader()
+    }
+    
+    class SmtpClient {
+        +Send()
+    }
+    
+    class XElement {
+        +Save()
+    }
+    
+    ProgramLegacy --> SqlConnection : "dépend de"
+    ProgramLegacy --> SmtpClient : "dépend de"
+    ProgramLegacy --> XElement : "dépend de"
+    
+    note for ProgramLegacy "❌ Impossible de tester\nsans SQL + SMTP + XML"
+```
+
+**Problème** : Tout est couplé. Tester une règle = lancer toute l'infrastructure.
+
+---
+
+#### Diagramme 2 : Domain Isolé (Clean Architecture)
+
+```mermaid
+classDiagram
+    class Client {
+        <<record>>
+        +int Id
+        +string Name
+        +string Email
+    }
+    
+    class IValidationRule {
+        <<interface>>
+        +IsValid(string value) bool
+    }
+    
+    class MinLengthRule {
+        +int MinLength
+        +IsValid(string value) bool
+    }
+    
+    class MaxLengthRule {
+        +int MaxLength
+        +IsValid(string value) bool
+    }
+    
+    class MandatoryRule {
+        +IsValid(string value) bool
+    }
+    
+    IValidationRule <|.. MinLengthRule : "implémente"
+    IValidationRule <|.. MaxLengthRule : "implémente"
+    IValidationRule <|.. MandatoryRule : "implémente"
+    
+    Client --> IValidationRule : "utilise"
+    
+    note for Client "✅ Testable en 15ms\nZéro dépendance externe"
+```
+
+**Avantage** : Tests ultra-rapides, logique métier isolée, stable dans le temps.
+
+---
+
+### 💡 L'Astuce Pratique
+
+> **Métaphore : Le Crash Test**
+>
+> Imaginez que vous êtes ingénieur automobile. Vous avez deux façons de tester la solidité d'une portière :
+>
+> **Méthode 1 (Legacy)** : Construire une voiture complète, installer le moteur, les 4 roues, le tableau de bord, faire le plein d'essence, puis crasher la voiture contre un mur pour tester la portière.
+> - **Temps** : 10 jours
+> - **Coût** : 50 000€
+>
+> **Méthode 2 (Domain Isolé)** : Détacher la portière, la mettre dans une machine de test, appliquer une pression.
+> - **Temps** : 15 secondes
+> - **Coût** : 10€
+>
+> Le Domain isolé, c'est la portière détachée. Vous testez **uniquement** la logique métier, sans toute la machinerie autour.
+
+**Best-Practice** : Si une classe a besoin de SQL pour être testée, ce n'est **pas** du Domain. C'est de l'Infrastructure.
+
+---
+
+### 💬 Analyse Collective
+
+**Question à réfléchir** :
+
+> "Combien de temps vous faut-il pour tester **une seule** règle de validation (ex: 'Le nom doit contenir 2 caractères minimum') dans le code legacy `ValidFlow.Legacy/Program.cs` ?"
+
+**Prenez 5-8 secondes pour réfléchir avant de répondre dans le chat.**
+
+**Réponse attendue** : **10 minutes minimum**. Pourquoi ?
+1. Lancer SQL Server (2 min)
+2. Créer une base de données test (3 min)
+3. Insérer un client test (1 min)
+4. Exécuter `ValidateData()` (1 min)
+5. Vérifier le résultat (1 min)
+6. Nettoyer la base (2 min)
+
+**Avec Domain isolé** : **15 millisecondes**
+```csharp
+[Fact]
+public void MinLengthRule_Should_Reject_Short_Name() {
+    var rule = new MinLengthRule(2);
+    Assert.False(rule.IsValid("A")); // ✅ 15ms
+}
+```
+
+**Constat** : L'isolation du Domain divise le temps de feedback par **40 000** (10 min → 15ms).
+
+---
+
+### 👨‍💻 Démonstration Live
+
+**🎯 Ce que vous allez voir** :
+
+Le formateur va créer l'entité `Client` et la règle `MinLengthRule` en C# 12, puis écrire un test unitaire qui s'exécute en 15ms.
+
+**📂 Répertoire de Travail Formateur** : `01_Demo_Formateur/ValidFlow.Modern/`
+
+**⏱️ Durée** : 20 minutes
+
+**Étapes de la Démonstration** :
+
+1. **Créer les dossiers dans Domain**
+   ```bash
+   cd 01_Demo_Formateur/ValidFlow.Modern/ValidFlow.Domain
+   mkdir Entities
+   mkdir Interfaces
+   mkdir Rules
+   ```
+   **Ce que vous voyez** : 3 nouveaux dossiers apparaissent
+
+2. **Créer l'entité Client (record C# 12)**
+   ```bash
+   # Supprimer le fichier auto-généré
+   Remove-Item Class1.cs
+   
+   # Créer Client.cs
+   New-Item Entities/Client.cs
+   ```
+   
+   **Code tapé en direct** :
+   ```csharp
+   namespace ValidFlow.Domain.Entities;
+   
+   public record Client(
+       int Id,
+       string Name,
+       string Email
+   );
+   ```
+   **Ce que vous voyez** : Utilisation de `record` (C# 12) pour l'immuabilité
+
+3. **Créer l'interface IValidationRule**
+   ```bash
+   New-Item Interfaces/IValidationRule.cs
+   ```
+   
+   **Code tapé en direct** :
+   ```csharp
+   namespace ValidFlow.Domain.Interfaces;
+   
+   public interface IValidationRule
+   {
+       bool IsValid(string value);
+   }
+   ```
+
+4. **Implémenter MinLengthRule avec pattern matching**
+   ```bash
+   New-Item Rules/MinLengthRule.cs
+   ```
+   
+   **Code tapé en direct** :
+   ```csharp
+   namespace ValidFlow.Domain.Rules;
+   
+   using ValidFlow.Domain.Interfaces;
+   
+   public class MinLengthRule(int minLength) : IValidationRule
+   {
+       public int MinLength { get; } = minLength;
+       
+       public bool IsValid(string value)
+       {
+           return value switch
+           {
+               null => false,
+               "" => false,
+               _ => value.Length >= MinLength
+           };
+       }
+   }
+   ```
+   **Ce que vous voyez** : Primary constructor (C# 12) + pattern matching
+
+5. **Créer un test unitaire**
+   ```bash
+   cd ../ValidFlow.Tests
+   Remove-Item UnitTest1.cs
+   New-Item MinLengthRuleTests.cs
+   ```
+   
+   **Code tapé en direct** :
+   ```csharp
+   namespace ValidFlow.Tests;
+   
+   using ValidFlow.Domain.Rules;
+   using Xunit;
+   
+   public class MinLengthRuleTests
+   {
+       [Fact]
+       public void MinLengthRule_Should_Accept_Valid_Name()
+       {
+           // Arrange
+           var rule = new MinLengthRule(2);
+           
+           // Act
+           var result = rule.IsValid("John");
+           
+           // Assert
+           Assert.True(result);
+       }
+       
+       [Fact]
+       public void MinLengthRule_Should_Reject_Short_Name()
+       {
+           // Arrange
+           var rule = new MinLengthRule(2);
+           
+           // Act
+           var result = rule.IsValid("A");
+           
+           // Assert
+           Assert.False(result);
+       }
+   }
+   ```
+
+6. **Lancer les tests**
+   ```bash
+   cd ..
+   dotnet test
+   ```
+   **Ce que vous voyez** :
+   ```
+   Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: 15 ms
+   ```
+
+**💬 Message** :
+> "Vous venez de voir le Domain isolé en action : 2 tests passent en **15 millisecondes** sans infrastructure. Maintenant, c'est à vous de créer les 3 règles de validation (`MinLengthRule`, `MaxLengthRule`, `MandatoryRule`) et de les tester. Vous avez 45 minutes. Commencez maintenant !"
+
+---
+
+### ⚙️ Défi d'Application
+
+**Mission** : Migrer les 3 règles de validation du code legacy vers le projet Domain et les tester.
+
+**📂 Répertoire de Travail Stagiaires** : `02_Atelier_Stagiaires/ValidFlow.Modern/`
+
+**⏱️ Durée** : 45 minutes
+
+**📂 Structure Domain Cible** :
+
+```
+ValidFlow.Domain/
+├─ Entities/
+│  └─ Client.cs           (record avec Id, Name, Email)
+├─ Interfaces/
+│  └─ IValidationRule.cs  (interface avec IsValid)
+└─ Rules/
+   ├─ MinLengthRule.cs    (min 2 caractères)
+   ├─ MaxLengthRule.cs    (max 100 caractères)
+   └─ MandatoryRule.cs    (non null, non vide)
+```
+
+**Étapes** :
+
+1. **Créer les dossiers**
+   ```bash
+   cd 02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Domain
+   mkdir Entities
+   mkdir Interfaces
+   mkdir Rules
+   Remove-Item Class1.cs
+   ```
+
+2. **Créer l'entité Client** (`Entities/Client.cs`)
+   - Utiliser `record` (C# 12)
+   - Propriétés : `Id` (int), `Name` (string), `Email` (string)
+
+3. **Créer l'interface** (`Interfaces/IValidationRule.cs`)
+   - Méthode : `bool IsValid(string value)`
+
+4. **Implémenter les 3 règles** :
+   - `MinLengthRule` : Rejette si longueur < 2
+   - `MaxLengthRule` : Rejette si longueur > 100
+   - `MandatoryRule` : Rejette si null ou vide
+
+5. **Créer les tests** (`ValidFlow.Tests/ValidationRulesTests.cs`)
+   - 2 tests par règle (cas valide + cas invalide)
+   - Structure AAA : Arrange, Act, Assert
+
+6. **Valider**
+   ```bash
+   dotnet test
+   ```
+
+**Critères de Succès** :
+- [ ] 3 règles implémentées
+- [ ] 6 tests unitaires minimum (2 par règle)
+- [ ] `dotnet test` passe au vert en < 100ms
+- [ ] Zéro dépendance NuGet dans `ValidFlow.Domain.csproj`
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Pour démarrer** :
+- **Record C# 12** : Syntaxe `public record Client(int Id, string Name, string Email);` crée automatiquement les propriétés et le constructeur.
+- **Pattern Matching** : Utilisez `value switch { null => false, "" => false, _ => ... }` pour gérer les cas edge.
+- **Primary Constructor** : `public class MinLengthRule(int minLength)` (C# 12) simplifie l'initialisation.
+
+**Si vous bloquez** :
+- **Erreur CS0246** ("Le type 'Client' est introuvable") : Avez-vous bien ajouté `using ValidFlow.Domain.Entities;` ?
+- **Tests ne passent pas** : Vérifiez la logique du `switch`. Le cas `null` doit être traité avant le cas `""`.
+- **Référence projet manquante** : `dotnet add ValidFlow.Tests/ValidFlow.Tests.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj`
+
+**Pour aller plus loin** :
+- Ouvrez `ValidFlow.Domain.csproj`. Combien de `<PackageReference>` voyez-vous ? (Réponse attendue : **0**)
+- Créez un 4ème test pour `MinLengthRule` avec un nom de 2 caractères exactement (cas limite).
+
+---
+
+### 🔗 Solution Complète
+
+La solution détaillée sera partagée par le formateur après l'exercice :
+
+📂 `Solutions_A_Partager/J1_S3_Solution_13h30_Domain.md`
+
+---
+
+**Fin Session 3 - 13h30**
+
+---
+
+## ⏸️ Session 4 : En Cours de Génération
+
+La session suivante sera ajoutée après validation de la Session 3.
+
+**Prochaine Session** :
 - Session 4 - 15h10 : Modernisation de la Syntaxe (C# 12)
