@@ -381,9 +381,96 @@ graph TB
 
 ---
 
+### 👨‍💻 Démonstration Live
+
+**🎯 Ce que vous allez voir** :
+
+Le formateur va créer les 5 projets .NET 8 en direct devant vous. Observez bien chaque commande et son résultat.
+
+**📂 Répertoire de Travail Formateur** : `01_Demo_Formateur/`
+
+**⏱️ Durée** : 15 minutes
+
+**Étapes de la Démonstration** :
+
+1. **Création du dossier racine**
+   ```bash
+   cd 01_Demo_Formateur
+   mkdir ValidFlow.Modern
+   cd ValidFlow.Modern
+   ```
+   **Ce que vous voyez** : Le terminal se positionne dans le nouveau dossier
+
+2. **Création du projet Domain (cœur métier)**
+   ```bash
+   dotnet new classlib -n ValidFlow.Domain
+   ```
+   **Ce que vous voyez** : Un dossier `ValidFlow.Domain/` apparaît avec `Class1.cs` et `ValidFlow.Domain.csproj`
+
+3. **Création du projet Tests**
+   ```bash
+   dotnet new xunit -n ValidFlow.Tests
+   ```
+   **Ce que vous voyez** : Un dossier `ValidFlow.Tests/` avec `UnitTest1.cs`
+
+4. **Création des projets Application et Infrastructure**
+   ```bash
+   dotnet new classlib -n ValidFlow.Application
+   dotnet new classlib -n ValidFlow.Infrastructure
+   ```
+   **Ce que vous voyez** : Deux nouveaux dossiers créés
+
+5. **Création du projet Console (point d'entrée)**
+   ```bash
+   dotnet new console -n ValidFlow.Console
+   ```
+   **Ce que vous voyez** : Un dossier `ValidFlow.Console/` avec `Program.cs`
+
+6. **Création de la solution globale**
+   ```bash
+   dotnet new sln -n ValidFlow.Modern
+   dotnet sln add **/*.csproj
+   ```
+   **Ce que vous voyez** : Tous les projets sont ajoutés à la solution
+
+7. **Configuration des références entre projets**
+   ```bash
+   # Tests → Domain
+   dotnet add ValidFlow.Tests/ValidFlow.Tests.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj
+   
+   # Application → Domain
+   dotnet add ValidFlow.Application/ValidFlow.Application.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj
+   
+   # Infrastructure → Domain
+   dotnet add ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj
+   
+   # Console → Application + Infrastructure
+   dotnet add ValidFlow.Console/ValidFlow.Console.csproj reference ValidFlow.Application/ValidFlow.Application.csproj
+   dotnet add ValidFlow.Console/ValidFlow.Console.csproj reference ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+   ```
+   **Ce que vous voyez** : Pour chaque commande, le message "Reference added"
+
+8. **Validation finale**
+   ```bash
+   dotnet build
+   ```
+   **Ce que vous voyez** : 
+   ```
+   Build succeeded.
+       0 Warning(s)
+       0 Error(s)
+   ```
+
+**💬 Message** :
+> "Vous venez de voir les 8 étapes pour créer une Clean Architecture .NET 8. Maintenant, c'est à vous de reproduire exactement la même chose dans votre dossier `02_Atelier_Stagiaires/`. Vous avez 30 minutes. Commencez maintenant !"
+
+---
+
 ### ⚙️ Défi d'Application
 
-**Mission** : Créer les 5 projets .NET 8 qui formeront l'architecture Clean.
+**Mission** : Reproduire les 5 projets .NET 8 que vous venez de voir en démonstration.
+
+**📂 Répertoire de Travail Stagiaires** : `02_Atelier_Stagiaires/`
 
 **⏱️ Durée** : 30 minutes
 

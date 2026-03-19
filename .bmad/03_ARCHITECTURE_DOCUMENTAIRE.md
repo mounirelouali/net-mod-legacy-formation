@@ -139,7 +139,8 @@ G:\Drive partagés\wetic-s\modules\net-mod-legacy\net-mod-legacy_master_document
 | 🧠 | **Concepts Fondamentaux** | Théorie pure, définitions, principes | 10-15 min |
 | 💡 | **L'Astuce Pratique** | Anecdote, métaphore, best-practice | 5 min |
 | 💬 | **Analyse Collective** | Question ouverte + silence 5-8s | 5 min |
-| ⚙️ | **Défi d'Application** | Exercice pratique avec critères succès | 15-45 min |
+| 👨‍💻 | **Démonstration Live** | Formateur exécute commandes dans `01_Demo_Formateur/` - Stagiaires observent | 10-20 min |
+| ⚙️ | **Défi d'Application** | Stagiaires travaillent dans `02_Atelier_Stagiaires/` - Exercice pratique | 15-45 min |
 | 🔗 | **Lien vers la Solution** | Phrase standard + lien Drive | 1 min |
 
 ### Structure Type d'une Session
@@ -190,11 +191,45 @@ graph LR
 
 ---
 
+## 👨‍💻 Démonstration Live
+
+**🎯 Ce que le formateur va montrer** :
+
+[Description brève de la démo - 1-2 lignes]
+
+**📂 Répertoire de Travail** : `01_Demo_Formateur/`
+
+**⏱️ Durée** : 10-20 minutes
+
+**Étapes** :
+
+1. **[Nom étape 1]**
+   ```bash
+   # Commande exacte à taper
+   cd 01_Demo_Formateur
+   dotnet new classlib -n Demo.Project
+   ```
+   **Explication** : [Pourquoi cette commande]
+   
+2. **[Nom étape 2]**
+   ```bash
+   # Commande exacte à taper
+   dotnet build
+   ```
+   **Résultat attendu** : [Ce que les stagiaires voient à l'écran]
+
+**💬 Message aux stagiaires** :
+> "Observez bien les commandes. Vous allez reproduire exactement la même chose dans votre dossier `02_Atelier_Stagiaires/` juste après."
+
+---
+
 ## ⚙️ Défi d'Application
 
 **Contexte** : [1-2 lignes de mise en situation]
 
 **Mission** : [Action précise à réaliser]
+
+**📂 Répertoire de Travail** : `02_Atelier_Stagiaires/`
 
 **Durée** : XX minutes
 
