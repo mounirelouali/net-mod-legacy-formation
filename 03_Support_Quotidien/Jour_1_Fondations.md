@@ -736,7 +736,8 @@ classDiagram
     
     Client --> IValidationRule : "utilise"
     
-    note for Client "✅ Testable en 15ms\nZéro dépendance externe"
+    style Client fill:#d4edda,stroke:#28a745,stroke-width:3px
+    style IValidationRule fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
 ```
 
 **Avantage** : Tests ultra-rapides, logique métier isolée, stable dans le temps.
@@ -856,34 +857,39 @@ Le formateur va créer l'entité `Client` et la règle `MinLengthRule` en C# 12,
    
    **Code tapé en direct** :
    ```csharp
-    using ValidFlow.Domain.Interfaces;
-    // [Nouveauté C# 12] Constructeurs principaux (Primary Constructors) déclarés directement sur la signature de la classe.
-    // Le paramètre 'minLength' est capturé et disponible dans toute la classe sans avoir à déclarer de champ privé explicite.
-    public class MinLengthRule(int minLength) : IValidationRule
-    {
-        // Affectation directe de la propriété en lecture seule (get-only) à partir du paramètre du constructeur principal.
-        public int MinLength { get; } = minLength;
-        
-        public bool IsValid(string value)
-        {
-            // [Nouveautés C# 8+] Expressions switch (Switch expressions) combinées au filtrage par motif (Pattern matching).
-            // Contrairement à l'instruction 'switch/case' classique, l'expression switch est plus concise et retourne directement une valeur.
-            return value switch
-            {
-                // Motif constant (Constant pattern) : vérifie directement si la valeur correspond exactement à null.
-                null => false,
-                
-                // Motif constant : vérifie si la chaîne est vide.
-                "" => false,
-                
-                // Motif de rejet (Discard pattern) '_' : agit comme la section 'default' d'un switch classique.
-                // Il s'assure que l'expression est exhaustive et couvre tous les cas restants pour éviter une SwitchExpressionException.
-                _ => value.Length >= MinLength
-            };
-        }
-    }
+   // [Style C# 9] Namespace avec accolades (sera modernisé en Session 4)
+   namespace ValidFlow.Domain.Rules
+   {
+       using ValidFlow.Domain.Interfaces;
+       
+       public class MinLengthRule : IValidationRule
+       {
+           // [Style classique] Champ privé avec convention _camelCase
+           private readonly int _minLength;
+           
+           // [Style classique] Constructeur explicite
+           public MinLengthRule(int minLength)
+           {
+               _minLength = minLength;
+           }
+           
+           // Propriété publique en lecture seule
+           public int MinLength => _minLength;
+           
+           public bool IsValid(string value)
+           {
+               // [C# 8] Switch expression avec pattern matching
+               return value switch
+               {
+                   null => false,
+                   "" => false,
+                   _ => value.Length >= MinLength
+               };
+           }
+       }
+   }
    ```
-   **Ce que vous voyez** : Primary constructor (C# 12) + pattern matching
+   **Ce que vous voyez** : Code C# 9 classique (sera modernisé en Session 4 avec primary constructor + file-scoped namespace)
 
 5. **Créer un test unitaire**
    ```bash
@@ -898,10 +904,9 @@ Le formateur va créer l'entité `Client` et la règle `MinLengthRule` en C# 12,
    
    **Code tapé en direct** :
     ```csharp
-    // [Nouveauté C# 10+] Espace de noms à portée de fichier (File-scoped namespace).
-    // Supprime le besoin d'accolades {} pour le namespace, ce qui réduit l'indentation globale du fichier.
-    // C'est le standard généré par défaut dans les nouveaux projets .NET 8.
-    namespace ValidFlow.Tests;
+    // [Style C# 9] Namespace avec accolades (standard avant .NET 6)
+    namespace ValidFlow.Tests
+    {
 
     using ValidFlow.Domain.Rules;
     // Utilisation de xUnit, le framework de test moderne recommandé et utilisé par les équipes Microsoft (ASP.NET Core)
@@ -948,6 +953,7 @@ Le formateur va créer l'entité `Client` et la règle `MinLengthRule` en C# 12,
             Assert.False(result);
         }
     }
+    } // Fin du namespace
     ```
 
 6. **Lancer les tests**
@@ -961,7 +967,9 @@ Le formateur va créer l'entité `Client` et la règle `MinLengthRule` en C# 12,
    ```
 
 **💬 Message** :
-> "Vous venez de voir le Domain isolé en action : 2 tests passent en **15 millisecondes** sans infrastructure. Maintenant, c'est à vous de créer les 3 règles de validation (`MinLengthRule`, `MaxLengthRule`, `MandatoryRule`) et de les tester. Vous avez 45 minutes. Commencez maintenant !"
+> "Vous venez de voir le Domain isolé en action : 2 tests passent en **15 millisecondes** sans infrastructure. C'est comme faire cuire des pâtes en 15ms au lieu de 10 minutes... sauf que là, on ne risque pas de les rater ! 🍝
+>
+> Maintenant, c'est à vous de créer les 3 règles de validation (`MinLengthRule`, `MaxLengthRule`, `MandatoryRule`) avec la syntaxe C# 9 classique (on modernisera tout ça en Session 4, patience !). Vous avez 45 minutes. Commencez maintenant !"
 
 ---
 
@@ -999,16 +1007,18 @@ ValidFlow.Domain/
    ```
 
 2. **Créer l'entité Client** (`Entities/Client.cs`)
-   - Utiliser `record` (C# 12)
+   - Utiliser `record` (C# 9) avec namespace classique
    - Propriétés : `Id` (int), `Name` (string), `Email` (string)
+   - **Important** : Utilisez la syntaxe C# 9 avec accolades `namespace X { ... }` (pas file-scoped)
 
 3. **Créer l'interface** (`Interfaces/IValidationRule.cs`)
    - Méthode : `bool IsValid(string value)`
 
-4. **Implémenter les 3 règles** :
-   - `MinLengthRule` : Rejette si longueur < 2
-   - `MaxLengthRule` : Rejette si longueur > 100
-   - `MandatoryRule` : Rejette si null ou vide
+4. **Implémenter les 3 règles** (syntaxe C# 9 classique) :
+   - `MinLengthRule` : Champ privé `_minLength` + constructeur classique + propriété `MinLength`. Rejette si longueur < 2
+   - `MaxLengthRule` : Champ privé `_maxLength` + constructeur classique + propriété `MaxLength`. Rejette si longueur > 100
+   - `MandatoryRule` : Pas de paramètre. Rejette si null ou vide
+   - **Important** : N'utilisez PAS primary constructor ni file-scoped namespace (on modernisera en Session 4)
 
 5. **Créer les tests** (`ValidFlow.Tests/ValidationRulesTests.cs`)
    - 2 tests par règle (cas valide + cas invalide)
@@ -1030,9 +1040,10 @@ ValidFlow.Domain/
 ### 💡 Pistes de Réflexion
 
 **Pour démarrer** :
-- **Record C# 12** : Syntaxe `public record Client(int Id, string Name, string Email);` crée automatiquement les propriétés et le constructeur.
+- **Record C# 9** : `public record Client(int Id, string Name, string Email);` mais avec namespace classique `namespace X { ... }`
 - **Pattern Matching** : Utilisez `value switch { null => false, "" => false, _ => ... }` pour gérer les cas edge.
-- **Primary Constructor** : `public class MinLengthRule(int minLength)` (C# 12) simplifie l'initialisation.
+- **Constructeur classique** : Champ privé `private readonly int _minLength;` + constructeur `public MinLengthRule(int minLength) { _minLength = minLength; }` + propriété `public int MinLength => _minLength;`
+- **Pas de Primary Constructor** : On garde la syntaxe C# 9 pour l'instant (modernisation en Session 4)
 
 **Si vous bloquez** :
 - **Erreur CS0246** ("Le type 'Client' est introuvable") : Avez-vous bien ajouté `using ValidFlow.Domain.Entities;` ?
@@ -1149,8 +1160,10 @@ public class MinLengthRule(int minLength) : IValidationRule
 
 **Gain** : -2 lignes, -1 niveau d'indentation sur TOUT le fichier.
 
-**Métaphore** : 
-> Imaginez un livre où chaque chapitre commence par "DÉBUT DU CHAPITRE" et finit par "FIN DU CHAPITRE". File-scoped namespace, c'est comme supprimer "FIN DU CHAPITRE" (tout le monde sait que le chapitre se termine à la fin de la page).
+**Métaphore (avec une touche d'humour)** : 
+> Imaginez un livre où chaque chapitre commence par "DÉBUT DU CHAPITRE" et finit par "FIN DU CHAPITRE". C'est comme votre grand-mère qui commence TOUTES ses phrases par "Bon alors écoute-moi bien" et les termine par "Voilà c'est tout ce que j'avais à dire". On l'aime, mais... on a compris après la 47ème fois ! 😄
+>
+> File-scoped namespace (C# 10+), c'est comme dire à votre code : "Pas besoin de rappeler que le chapitre se termine, on voit bien qu'on est à la dernière page !"
 
 ---
 
@@ -1185,9 +1198,14 @@ public class MinLengthRule(int minLength) : IValidationRule
 
 **Gain** : -6 lignes (champ + constructeur + affectation).
 
-**Métaphore** :
-> Avant : "Bonjour, je m'appelle Jean. Mon nom c'est Jean. Je vais mémoriser que je m'appelle Jean." (répétitif)  
-> Après : "Bonjour, je m'appelle Jean." (direct, clair)
+**Métaphore (avec une touche d'humour)** :
+> **Avant (C# 9)** : "Bonjour, je m'appelle Jean. Mon nom c'est Jean. Au cas où vous auriez oublié, je m'appelle Jean. Je vais maintenant stocker dans ma mémoire que... je m'appelle Jean. Ah et j'ai mentionné que je m'appelle Jean ?"
+> 
+> (C'est comme ce collègue qui répète 5 fois la même chose en réunion... On a compris Kevin, tu t'appelles Kevin ! 😅)
+>
+> **Après (C# 12 Primary Constructor)** : "Bonjour, je m'appelle Jean." 
+>
+> Direct, clair, efficace. Comme un bon café expresso vs un discours de 20 minutes.
 
 ---
 
@@ -1210,8 +1228,14 @@ var numbers = [1, 2, 3, 4, 5];
 
 **Gain** : -12 caractères par ligne.
 
-**Métaphore** :
-> C'est comme passer de "Veuillez me préparer une liste contenant les éléments suivants" à "Voici : [...]". Moins de cérémonie, même résultat.
+**Métaphore (avec une touche d'humour)** :
+> **Avant C# 12** : "Excusez-moi cher compilateur, pourriez-vous s'il vous plaît avoir l'extrême obligeance de bien vouloir créer une nouvelle liste générique de type chaîne de caractères en instanciant la classe List avec le constructeur par défaut puis en initialisant les éléments suivants..."
+>
+> (C'est le développeur qui parle comme s'il écrivait une lettre au roi Louis XIV 👑)
+>
+> **Après C# 12** : `["A", "B", "C"]`
+>
+> Comme passer d'un formulaire administratif de 12 pages à "Voici :" suivi d'une liste. Simple, direct, et vous n'avez pas besoin d'un café après l'avoir écrit ! ☕
 
 ---
 
