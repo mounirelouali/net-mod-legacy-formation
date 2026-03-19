@@ -306,6 +306,14 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
    curl -X POST http://localhost:5000/api/validate -H "Content-Type: application/json" -d '{"id":1,"name":"A","email":"john@example.com"}'
    ```
    
+   > ⚠️ **Important** : Avant de tester avec curl, assurez-vous que le serveur est démarré :
+   > ```bash
+   > dotnet run
+   > # Puis dans un autre terminal, exécutez les commandes curl
+   > ```
+   > 
+   > **Erreur courante** : `Failed to connect to localhost port 5000` = Le serveur ne tourne pas !
+   
    **Résultat attendu (client valide)** :
    ```json
    { "message": "Client valide", "client": { "id": 1, "name": "John Doe", "email": "john@example.com" } }
