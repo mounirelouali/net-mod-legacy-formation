@@ -746,7 +746,7 @@ classDiagram
 
 #### 📊 Infographie : L'Isolation du Domain en Image
 
-![Domain Isolation - L'Île Stérile](../../05_Ressources_Visuelles/J1_S3_Infographie_Domain_Isolation.png)
+![Domain Isolation - L'Île Stérile](../05_Ressources_Visuelles/J1_S3_Infographie_Domain_Isolation.png)
 
 **Légende** : Cette infographie résume visuellement pourquoi isoler le Domain (testable en 15ms sans infrastructure) et comment appliquer l'inversion de dépendances.
 
