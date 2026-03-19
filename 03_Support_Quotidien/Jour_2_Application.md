@@ -243,12 +243,60 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
    dotnet add package Microsoft.Extensions.Hosting
    ```
 
-2. **Ajouter les références vers Domain**
+2. **Créer les règles de validation manquantes dans Domain**
+   
+   Les règles `MaxLengthRule` et `MandatoryRule` n'existent pas encore. Créez-les :
+   
+   **Fichier** : `ValidFlow.Domain/Rules/MaxLengthRule.cs`
+   ```csharp
+   using ValidFlow.Domain.Interfaces;
+   
+   namespace ValidFlow.Domain.Rules
+   {
+       public class MaxLengthRule : IValidationRule
+       {
+           private readonly int _maxLength;
+           
+           public MaxLengthRule(int maxLength)
+           {
+               _maxLength = maxLength;
+           }
+           
+           public int MaxLength => _maxLength;
+           
+           public bool IsValid(string value)
+           {
+               if (string.IsNullOrEmpty(value))
+                   return true; // Pas d'erreur si vide (c'est MandatoryRule qui gère ça)
+               
+               return value.Length <= _maxLength;
+           }
+       }
+   }
+   ```
+   
+   **Fichier** : `ValidFlow.Domain/Rules/MandatoryRule.cs`
+   ```csharp
+   using ValidFlow.Domain.Interfaces;
+   
+   namespace ValidFlow.Domain.Rules
+   {
+       public class MandatoryRule : IValidationRule
+       {
+           public bool IsValid(string value)
+           {
+               return !string.IsNullOrWhiteSpace(value);
+           }
+       }
+   }
+   ```
+
+3. **Ajouter les références vers Domain**
    ```bash
    dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
    ```
 
-3. **Configurer Program.cs avec DI (Console App)**
+4. **Configurer Program.cs avec DI (Console App)**
    
    **Code tapé en direct** :
    ```csharp
@@ -339,7 +387,7 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
    
    **Ce que vous voyez** : Le conteneur IoC injecte automatiquement les 3 règles via `GetServices<IValidationRule>()`.
 
-4. **Exécuter et voir le résultat**
+5. **Exécuter et voir le résultat**
    
    ```bash
    dotnet run
@@ -364,7 +412,7 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
          - Erreur avec MinLengthRule
    ```
 
-5. **Expliquer l'injection automatique**
+6. **Expliquer l'injection automatique**
    
    **💬 Message formateur** :
    > "Vous voyez ? Je n'ai PAS écrit `new MinLengthRule(2)` dans le code de validation. J'ai juste demandé au conteneur IoC `GetServices<IValidationRule>()` et il m'a donné les 3 règles enregistrées. C'est ça, l'Inversion of Control ! 🎯"
