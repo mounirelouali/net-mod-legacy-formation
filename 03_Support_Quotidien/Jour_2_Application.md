@@ -232,102 +232,144 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Program.cs`, enregistrer le moteur de validation, et créer un endpoint API qui utilise les règles de validation du Domain.
 
-**📂 Répertoire de Travail Formateur** : `01_Demo_Formateur/ValidFlow.Modern/ValidFlow.Web/`
+**📂 Répertoire de Travail Formateur** : `01_Demo_Formateur/ValidFlow.Modern/ValidFlow.Console/`
 
 **Étapes** :
 
 1. **Installer le package Microsoft.Extensions.DependencyInjection**
    ```bash
-   cd 01_Demo_Formateur/ValidFlow.Modern/ValidFlow.Web
+   cd 01_Demo_Formateur/ValidFlow.Modern/ValidFlow.Console
    dotnet add package Microsoft.Extensions.DependencyInjection
+   dotnet add package Microsoft.Extensions.Hosting
    ```
 
-2. **Configurer Program.cs avec DI**
+2. **Ajouter les références vers Domain**
+   ```bash
+   dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
+   ```
+
+3. **Configurer Program.cs avec DI (Console App)**
    
    **Code tapé en direct** :
    ```csharp
-   // [.NET 8] Top-level statements (pas de classe Program explicite)
-   var builder = WebApplication.CreateBuilder(args);
+   using Microsoft.Extensions.DependencyInjection;
+   using Microsoft.Extensions.Hosting;
+   using ValidFlow.Domain.Entities;
+   using ValidFlow.Domain.Interfaces;
+   using ValidFlow.Domain.Rules;
    
    // ========================================
-   // CONFIGURATION DES SERVICES (DI)
+   // CONFIGURATION DU CONTENEUR DI
    // ========================================
    
-   // Enregistrement des règles de validation (Transient car sans état)
-   builder.Services.AddTransient<IValidationRule, MinLengthRule>(sp => new MinLengthRule(2));
-   builder.Services.AddTransient<IValidationRule, MaxLengthRule>(sp => new MaxLengthRule(100));
-   builder.Services.AddTransient<IValidationRule, MandatoryRule>();
+   var builder = Host.CreateDefaultBuilder(args);
    
-   // Enregistrement du moteur de validation (Scoped car lié à la requête)
-   builder.Services.AddScoped<IClientValidator, ClientValidator>();
-   
-   var app = builder.Build();
-   
-   // ========================================
-   // ENDPOINTS API
-   // ========================================
-   
-   // Endpoint de test : Valider un client
-   app.MapPost("/api/validate", (IClientValidator validator, Client client) => {
-       var errors = validator.Validate(client);
-       
-       if (errors.Count == 0)
-           return Results.Ok(new { message = "Client valide", client });
-       
-       return Results.BadRequest(new { errors });
+   builder.ConfigureServices(services => {
+       // Enregistrement des règles de validation (Transient)
+       services.AddTransient<IValidationRule>(sp => new MinLengthRule(2));
+       services.AddTransient<IValidationRule>(sp => new MaxLengthRule(100));
+       services.AddTransient<IValidationRule, MandatoryRule>();
    });
    
-   app.Run();
+   var host = builder.Build();
+   
+   // ========================================
+   // RÉSOLUTION DES DÉPENDANCES
+   // ========================================
+   
+   Console.WriteLine("=== Démonstration Injection de Dépendances ===");
+   Console.WriteLine();
+   
+   // Récupérer TOUTES les règles enregistrées
+   var rules = host.Services.GetServices<IValidationRule>().ToList();
+   
+   Console.WriteLine($"✅ {rules.Count} règles injectées par le conteneur IoC :");
+   foreach (var rule in rules)
+   {
+       Console.WriteLine($"   - {rule.GetType().Name}");
+   }
+   Console.WriteLine();
+   
+   // ========================================
+   // TEST DE VALIDATION
+   // ========================================
+   
+   var client1 = new Client(1, "John Doe", "john@example.com");
+   var client2 = new Client(2, "A", "short@example.com");
+   
+   Console.WriteLine("Test 1 - Client valide :");
+   Console.WriteLine($"   Nom: {client1.Name}");
+   ValidateClient(client1, rules);
+   Console.WriteLine();
+   
+   Console.WriteLine("Test 2 - Client invalide (nom trop court) :");
+   Console.WriteLine($"   Nom: {client2.Name}");
+   ValidateClient(client2, rules);
+   
+   // ========================================
+   // FONCTION DE VALIDATION
+   // ========================================
+   
+   void ValidateClient(Client client, List<IValidationRule> validationRules)
+   {
+       var errors = new List<string>();
+       
+       foreach (var rule in validationRules)
+       {
+           if (!rule.IsValid(client.Name))
+           {
+               errors.Add($"Erreur avec {rule.GetType().Name}");
+           }
+       }
+       
+       if (errors.Count == 0)
+       {
+           Console.WriteLine($"   ✅ Client valide");
+       }
+       else
+       {
+           Console.WriteLine($"   ❌ Client invalide :");
+           foreach (var error in errors)
+           {
+               Console.WriteLine($"      - {error}");
+           }
+       }
+   }
    ```
    
-   **Ce que vous voyez** : Les dépendances (`IClientValidator`, `IValidationRule`) sont injectées automatiquement dans l'endpoint.
+   **Ce que vous voyez** : Le conteneur IoC injecte automatiquement les 3 règles via `GetServices<IValidationRule>()`.
 
-3. **Tester l'endpoint avec curl**
+4. **Exécuter et voir le résultat**
    
-   **Option A : PowerShell (recommandé Windows)** - Copier-coller directement :
-   ```powershell
-   # Test avec un client valide
-   curl -X POST http://localhost:5000/api/validate `
-     -H "Content-Type: application/json" `
-     -d '{"id":1,"name":"John Doe","email":"john@example.com"}'
-   
-   # Test avec un client invalide (nom trop court)
-   curl -X POST http://localhost:5000/api/validate `
-     -H "Content-Type: application/json" `
-     -d '{"id":1,"name":"A","email":"john@example.com"}'
-   ```
-   
-   **Option B : Une ligne (copier-coller rapide)** :
    ```bash
-   # Client valide
-   curl -X POST http://localhost:5000/api/validate -H "Content-Type: application/json" -d '{"id":1,"name":"John Doe","email":"john@example.com"}'
-   
-   # Client invalide
-   curl -X POST http://localhost:5000/api/validate -H "Content-Type: application/json" -d '{"id":1,"name":"A","email":"john@example.com"}'
+   dotnet run
    ```
    
-   > ⚠️ **Important** : Avant de tester avec curl, assurez-vous que le serveur est démarré :
-   > ```bash
-   > dotnet run
-   > # Puis dans un autre terminal, exécutez les commandes curl
-   > ```
-   > 
-   > **Erreur courante** : `Failed to connect to localhost port 5000` = Le serveur ne tourne pas !
-   
-   **Résultat attendu (client valide)** :
-   ```json
-   { "message": "Client valide", "client": { "id": 1, "name": "John Doe", "email": "john@example.com" } }
+   **Résultat affiché dans la console** :
    ```
+   === Démonstration Injection de Dépendances ===
    
-   **Résultat attendu (client invalide)** :
-   ```json
-   { "errors": ["Le nom doit contenir au moins 2 caractères"] }
+   ✅ 3 règles injectées par le conteneur IoC :
+      - MinLengthRule
+      - MaxLengthRule
+      - MandatoryRule
+   
+   Test 1 - Client valide :
+      Nom: John Doe
+      ✅ Client valide
+   
+   Test 2 - Client invalide (nom trop court) :
+      Nom: A
+      ❌ Client invalide :
+         - Erreur avec MinLengthRule
    ```
 
-4. **Expliquer l'injection automatique**
+5. **Expliquer l'injection automatique**
    
    **💬 Message formateur** :
-   > "Vous voyez ? Je n'ai PAS écrit `new ClientValidator()` dans l'endpoint. Le conteneur IoC a vu que l'endpoint demande `IClientValidator`, il a cherché dans le `ServiceCollection`, trouvé que `IClientValidator` est lié à `ClientValidator`, et l'a créé automatiquement. C'est ça, l'Inversion of Control ! 🎯"
+   > "Vous voyez ? Je n'ai PAS écrit `new MinLengthRule(2)` dans le code de validation. J'ai juste demandé au conteneur IoC `GetServices<IValidationRule>()` et il m'a donné les 3 règles enregistrées. C'est ça, l'Inversion of Control ! 🎯"
+   >
+   > **Avantage** : Si demain vous voulez ajouter une 4ème règle, vous modifiez **1 seule ligne** dans `ConfigureServices`, et elle sera automatiquement injectée partout.
 
 ---
 
@@ -338,9 +380,9 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
 
 ## ⚙️ Défi d'Application
 
-**Mission** : Configurer l'injection de dépendances dans `ValidFlow.Web/Program.cs` et créer un endpoint API pour valider un client.
+**Mission** : Configurer l'injection de dépendances dans une Console App et valider des clients.
 
-**📂 Répertoire de Travail Stagiaires** : `02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Web/`
+**📂 Répertoire de Travail Stagiaires** : `02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Console/`
 
 **⏱️ Durée** : 30 minutes
 
@@ -349,61 +391,64 @@ Le formateur va configurer l'injection de dépendances dans `ValidFlow.Web/Progr
 **📂 Structure Cible** :
 
 ```
-ValidFlow.Web/
-├─ Program.cs           (Configuration DI + endpoints)
-├─ ValidFlow.Web.csproj (Dépendances NuGet)
+ValidFlow.Console/
+├─ Program.cs           (Configuration DI + tests)
+├─ ValidFlow.Console.csproj (Dépendances NuGet)
 ```
 
 **Étapes** :
 
-1. **Ajouter la dépendance vers Domain et Application**
+1. **Installer les packages NuGet**
    ```bash
-   cd 02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Web
-   dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
-   dotnet add reference ../ValidFlow.Application/ValidFlow.Application.csproj
+   cd 02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Console
+   dotnet add package Microsoft.Extensions.DependencyInjection
+   dotnet add package Microsoft.Extensions.Hosting
    ```
 
-2. **Configurer Program.cs avec DI**
-   - Enregistrer les 3 règles de validation (Transient)
-   - Enregistrer le moteur de validation (Scoped)
+2. **Ajouter la référence vers Domain**
+   ```bash
+   dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
+   ```
 
-3. **Créer un endpoint POST /api/validate**
-   - Accepte un JSON `{ "id": 1, "name": "John", "email": "john@example.com" }`
-   - Retourne `{ "message": "Client valide" }` ou `{ "errors": [...] }`
+3. **Configurer Program.cs avec DI**
+   - Créer le conteneur avec `Host.CreateDefaultBuilder(args)`
+   - Enregistrer les 3 règles de validation avec `services.AddTransient<IValidationRule>(...)`
+   - Récupérer les règles injectées avec `host.Services.GetServices<IValidationRule>()`
 
-4. **Tester avec curl ou Postman**
+4. **Tester 2 clients**
+   - Client 1 : `new Client(1, "John Doe", "john@example.com")` → doit être valide
+   - Client 2 : `new Client(2, "A", "short@example.com")` → doit être invalide (nom trop court)
+
+5. **Exécuter et vérifier le résultat**
    ```bash
    dotnet run
-   # Test dans un autre terminal
-   curl -X POST http://localhost:5000/api/validate \
-     -H "Content-Type: application/json" \
-     -d '{"id":1,"name":"John Doe","email":"john@example.com"}'
    ```
 
 **Critères de Succès** :
-- [ ] DI configuré dans Program.cs
+- [ ] DI configuré avec `Host.CreateDefaultBuilder`
 - [ ] 3 règles de validation enregistrées (MinLength, MaxLength, Mandatory)
-- [ ] Endpoint POST /api/validate fonctionnel
-- [ ] Test curl retourne 200 OK pour un client valide
-- [ ] Test curl retourne 400 BadRequest pour un client invalide
+- [ ] `dotnet run` affiche les 3 règles injectées
+- [ ] Client 1 ("John Doe") est validé ✅
+- [ ] Client 2 ("A") est rejeté ❌ avec erreur MinLengthRule
 
 ---
 
 ### 💡 Pistes de Réflexion
 
 **Pour démarrer** :
-- **AddTransient vs AddScoped** : Les règles de validation sont sans état → Transient. Le moteur de validation peut être Scoped.
-- **Injection dans endpoint** : `app.MapPost("/api/validate", (IClientValidator validator, Client client) => { ... })`
-- **Enregistrement avec factory** : `builder.Services.AddTransient<IValidationRule>(sp => new MinLengthRule(2));`
+- **Host.CreateDefaultBuilder** : Crée le conteneur IoC pour une Console App (équivalent de `WebApplication.CreateBuilder` pour Web)
+- **ConfigureServices** : Lambda où vous enregistrez vos dépendances
+- **GetServices<T>()** : Récupère TOUTES les implémentations d'une interface (retourne `IEnumerable<T>`)
+- **Enregistrement avec factory** : `services.AddTransient<IValidationRule>(sp => new MinLengthRule(2));`
 
 **Si vous bloquez** :
-- **Erreur CS0246** ("Le type 'IClientValidator' est introuvable") : Avez-vous ajouté `using ValidFlow.Application.Interfaces;` ?
-- **Erreur 404 Not Found** : Vérifiez l'URL de l'endpoint (http://localhost:5000/api/validate)
-- **Erreur DI** ("No service registered for IClientValidator") : Avez-vous appelé `builder.Services.AddScoped<IClientValidator, ClientValidator>()` ?
+- **Erreur CS0246** ("Le type 'IValidationRule' est introuvable") : Avez-vous ajouté `using ValidFlow.Domain.Interfaces;` ?
+- **Erreur DI** ("No service registered") : Vérifiez que vous avez bien appelé `ConfigureServices` avant `Build()`
+- **0 règles récupérées** : Vérifiez que vous utilisez `GetServices<IValidationRule>()` (avec **s** à Services)
 
 **Pour aller plus loin** :
-- Créez un endpoint GET /api/rules qui retourne la liste des règles de validation enregistrées
-- Utilisez `IServiceProvider` pour résoudre manuellement une dépendance
+- Ajoutez une 4ème règle (ex: `EmailFormatRule`) et constatez qu'elle est automatiquement injectée
+- Utilisez `GetRequiredService<T>()` pour récupérer une seule dépendance (lance exception si absente)
 
 ---
 
@@ -411,6 +456,7 @@ ValidFlow.Web/
 
 - [Dependency Injection in .NET 8](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection)
 - [Service Lifetimes](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes)
+- [Generic Host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host)
 
 ---
 
