@@ -2,43 +2,8 @@
 
 ## Session 09h00 : Analyse de l'existant
 
----
-
-## 📥 Préparation de l'Environnement
-
-> **⚙️ Setup Initial - À faire MAINTENANT**
-
-Avant de commencer l'analyse, vous devez cloner le repository de formation qui contient le code legacy à auditer.
-
-### Étapes d'Installation
-
-**1. Créer le dossier de travail** :
-```bash
-cd C:\dev
-```
-*(Si le dossier `C:\dev` n'existe pas, créez-le d'abord : `mkdir C:\dev`)*
-
-**2. Cloner le repository GitHub** :
-```bash
-git clone https://github.com/mounirelouali/net-mod-legacy-formation.git
-cd net-mod-legacy-formation
-```
-
-**3. Ouvrir le projet dans Visual Studio Code** :
-```bash
-code .
-```
-
-**4. Explorer la structure** :
-```
-net-mod-legacy-formation/
-├── README.md (contexte métier)
-├── 00_Reference_Client/generationxml/ (code legacy client)
-├── 02_Atelier_Stagiaires/ValidFlow.Legacy/ (votre code à moderniser)
-└── 03_Workbooks_Stagiaires/ (vos guides)
-```
-
-> ✅ **Checkpoint** : Vous devez voir le fichier `README.md` ouvert dans VS Code avant de continuer.
+> ℹ️ **Note** : Vous avez déjà cloné le repository et ouvert VS Code lors de l'initialisation.  
+> Si ce n'est pas le cas, consultez votre formateur.
 
 ---
 
@@ -84,7 +49,7 @@ graph TD
 
 **Actions :**
 
-1. Ouvrez le fichier `02_Atelier_Stagiaires/ValidFlow.Legacy/Start/Program.cs`.
+1. Ouvrez le fichier `02_Atelier_Stagiaires/ValidFlow.Legacy/Program.cs`.
 2. Pour chaque catégorie du tableau ci-dessus, trouvez le code problématique.
 3. Notez les **numéros de ligne exacts** pour chaque problème.
 
