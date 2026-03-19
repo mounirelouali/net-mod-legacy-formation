@@ -744,6 +744,14 @@ classDiagram
 
 ---
 
+#### 📊 Infographie : L'Isolation du Domain en Image
+
+![Domain Isolation - L'Île Stérile](../../05_Ressources_Visuelles/J1_S3_Infographie_Domain_Isolation.png)
+
+**Légende** : Cette infographie résume visuellement pourquoi isoler le Domain (testable en 15ms sans infrastructure) et comment appliquer l'inversion de dépendances.
+
+---
+
 ### 💡 L'Astuce Pratique
 
 > **Métaphore : Le Crash Test**
@@ -967,9 +975,9 @@ Le formateur va créer l'entité `Client` et la règle `MinLengthRule` en C# 12,
    ```
 
 **💬 Message** :
-> "Vous venez de voir le Domain isolé en action : 2 tests passent en **15 millisecondes** sans infrastructure. C'est comme faire cuire des pâtes en 15ms au lieu de 10 minutes... sauf que là, on ne risque pas de les rater ! 🍝
+> "Domain isolé = 15ms. C'est comme cuire des pâtes en 15ms au lieu de 10 minutes... sauf que là, on ne risque pas de les rater ! 🍝
 >
-> Maintenant, c'est à vous de créer les 3 règles de validation (`MinLengthRule`, `MaxLengthRule`, `MandatoryRule`) avec la syntaxe C# 9 classique (on modernisera tout ça en Session 4, patience !). Vous avez 45 minutes. Commencez maintenant !"
+> Créez les 3 règles en C# 9 classique (modernisation Session 4). 45 minutes. Go !"
 
 ---
 
@@ -1160,10 +1168,10 @@ public class MinLengthRule(int minLength) : IValidationRule
 
 **Gain** : -2 lignes, -1 niveau d'indentation sur TOUT le fichier.
 
-**Métaphore (avec une touche d'humour)** : 
-> Imaginez un livre où chaque chapitre commence par "DÉBUT DU CHAPITRE" et finit par "FIN DU CHAPITRE". C'est comme votre grand-mère qui commence TOUTES ses phrases par "Bon alors écoute-moi bien" et les termine par "Voilà c'est tout ce que j'avais à dire". On l'aime, mais... on a compris après la 47ème fois ! 😄
+**Métaphore (humour out-of-the-box)** : 
+> Grand-mère qui commence TOUTES ses phrases par "Bon alors écoute-moi bien" et finit par "Voilà c'est tout". 47ème fois, on a compris ! 😄
 >
-> File-scoped namespace (C# 10+), c'est comme dire à votre code : "Pas besoin de rappeler que le chapitre se termine, on voit bien qu'on est à la dernière page !"
+> File-scoped = "Pas besoin de rappeler la fin du chapitre, on voit bien qu'on est à la dernière page !"
 
 ---
 
@@ -1198,14 +1206,12 @@ public class MinLengthRule(int minLength) : IValidationRule
 
 **Gain** : -6 lignes (champ + constructeur + affectation).
 
-**Métaphore (avec une touche d'humour)** :
-> **Avant (C# 9)** : "Bonjour, je m'appelle Jean. Mon nom c'est Jean. Au cas où vous auriez oublié, je m'appelle Jean. Je vais maintenant stocker dans ma mémoire que... je m'appelle Jean. Ah et j'ai mentionné que je m'appelle Jean ?"
+**Métaphore (humour qui tue)** : 
+> **Avant** : "Bonjour je m'appelle Jean. Mon nom est Jean. Au cas où... je m'appelle Jean. Ah et j'ai mentionné Jean ?"
 > 
-> (C'est comme ce collègue qui répète 5 fois la même chose en réunion... On a compris Kevin, tu t'appelles Kevin ! 😅)
+> (Kevin en réunion, 5ème fois... On a compris Kevin ! 😅)
 >
-> **Après (C# 12 Primary Constructor)** : "Bonjour, je m'appelle Jean." 
->
-> Direct, clair, efficace. Comme un bon café expresso vs un discours de 20 minutes.
+> **Après** : "Bonjour je m'appelle Jean." Expresso vs discours de 20 min.
 
 ---
 
@@ -1228,14 +1234,14 @@ var numbers = [1, 2, 3, 4, 5];
 
 **Gain** : -12 caractères par ligne.
 
-**Métaphore (avec une touche d'humour)** :
-> **Avant C# 12** : "Excusez-moi cher compilateur, pourriez-vous s'il vous plaît avoir l'extrême obligeance de bien vouloir créer une nouvelle liste générique de type chaîne de caractères en instanciant la classe List avec le constructeur par défaut puis en initialisant les éléments suivants..."
+**Métaphore (humour absurde)** : 
+> **Avant** : "Cher compilateur, pourriez-vous avoir l'extrême obligeance de bien vouloir créer une nouvelle liste en instanciant la classe List avec le constructeur par défaut puis..."
+> 
+> (Lettre au roi Louis XIV 👑)
 >
-> (C'est le développeur qui parle comme s'il écrivait une lettre au roi Louis XIV 👑)
->
-> **Après C# 12** : `["A", "B", "C"]`
->
-> Comme passer d'un formulaire administratif de 12 pages à "Voici :" suivi d'une liste. Simple, direct, et vous n'avez pas besoin d'un café après l'avoir écrit ! ☕
+> **Après** : `["A", "B", "C"]`
+> 
+> Formulaire 12 pages → "Voici :". Pas de café après ! ☕
 
 ---
 
