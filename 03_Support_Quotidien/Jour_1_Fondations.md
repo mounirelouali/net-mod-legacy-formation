@@ -5,7 +5,63 @@
 
 ---
 
+## 🚀 Préparation de l'Environnement (Avant 09h00)
+
+### Étape 1 : Clone du Repository
+
+Ouvrez un terminal et exécutez les commandes suivantes :
+
+```bash
+cd C:\dev
+git clone https://github.com/mounirelouali/net-mod-legacy-formation.git
+cd net-mod-legacy-formation
+```
+
+> 💡 **Astuce** : Si le dossier `C:\dev` n'existe pas, créez-le d'abord avec `mkdir C:\dev`
+
+### Étape 2 : Ouvrir le Projet dans VS Code
+
+```bash
+code .
+```
+
+VS Code s'ouvre avec le projet. Vous devriez voir cette structure :
+
+```
+net-mod-legacy/
+├─ 02_Atelier_Stagiaires/
+│  └─ ValidFlow.Legacy/
+│     └─ Program.cs          ← Code à analyser ce matin
+├─ 03_Support_Quotidien/
+│  └─ Jour_1_Fondations.md   ← Ce document
+└─ README.md
+```
+
+### Étape 3 : Vérifier l'Environnement
+
+Dans le terminal VS Code, vérifiez que .NET 8 est installé :
+
+```bash
+dotnet --version
+```
+
+Vous devriez voir : `8.x.x` (version .NET 8)
+
+**Vous êtes prêt pour la session 09h00 !**
+
+---
+
 ## Session 1 - 09h00 : Analyse du Batch Legacy
+
+### 📢 Ouverture de Session
+
+Bonjour à tous et bienvenue pour ce premier jour de formation. Ce matin, on va faire quelque chose d'inhabituel.
+
+Au lieu de commencer par coder, on va **auditer** le code legacy. Pourquoi ? Parce qu'avant de refactoriser, il faut **prouver** que le code est dangereux. Sinon, votre manager ne vous donnera jamais 5 jours pour le moderniser.
+
+Vous allez chercher 5 problèmes critiques dans `ValidFlow.Legacy/Program.cs`. Un problème de **Sécurité**, un de **Performance**, un de **Robustesse**, un de **Maintenabilité** et un de **Déploiement**.
+
+L'objectif n'est pas de trouver des bugs, mais de documenter la **dette technique** avec un **coût business chiffré**. C'est ce qui convaincra votre direction d'investir dans le refactoring.
 
 ### 🧠 Concepts Fondamentaux
 
@@ -27,22 +83,68 @@ La **dette technique** représente le coût caché du code qui fonctionne aujour
 
 **Coût Total Estimé de la Dette** : **85 000€ à 550 000€ par an**
 
-#### Diagramme : Workflow Legacy (AS-IS)
+---
+
+### 🏗️ Architecture Actuelle vs Architecture Cible
+
+#### Diagramme 1 : Architecture AS-IS (Monolithe Legacy)
 
 ```mermaid
-graph LR
-    A[Program.cs<br/>Monolithique] --> B[(SQL Server)]
-    A --> C[Validation<br/>Métier]
-    C --> D{Erreurs?}
-    D -->|Oui| E[SMTP Email]
-    D -->|Non| F[Fichier XML]
+graph TB
+    subgraph "Architecture Actuelle (AS-IS) - Monolithe"
+        A[Program.cs<br/>~200 lignes]
+        A -->|Connection String hardcodée| B[(SQL Server<br/>localhost)]
+        A -->|Requête synchrone| B
+        B -->|Données| A
+        A -->|Validation| C[Rules<br/>MandatoryRule<br/>MinLengthRule<br/>MaxLengthRule]
+        C -->|Erreurs?| D{Validation}
+        D -->|❌ Erreurs| E[SmtpClient<br/>Password hardcodé]
+        D -->|✅ OK| F[XElement<br/>output.xml]
+        E -->|Email| G[admin@company.com]
+        F -->|Fichier| H[Système fichiers]
+    end
     
-    style A fill:#f8d7da,stroke:#dc3545,stroke-width:2px
-    style B fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
-    style E fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style A fill:#f8d7da,stroke:#dc3545,stroke-width:3px
+    style B fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    style E fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    style F fill:#fff3cd,stroke:#ffc107,stroke-width:2px
 ```
 
-**Problème** : Tout est couplé. Impossible de tester la validation sans lancer SQL Server + SMTP.
+**🔴 Problèmes** :
+- Tout est couplé dans `Program.cs` (SQL + SMTP + XML + validation)
+- Impossible de tester la validation sans lancer SQL Server + SMTP
+- Secrets en clair (passwords)
+- Appels synchrones (blocage)
+
+#### Diagramme 2 : Architecture TO-BE (Clean Architecture)
+
+```mermaid
+graph TB
+    subgraph "Architecture Cible (TO-BE) - Clean Architecture"
+        A[Console App<br/>ValidFlow.Console] --> B[Application Layer<br/>ValidFlow.Application]
+        B --> C((Domain Core<br/>ValidFlow.Domain<br/>Entities + Rules))
+        D[Infrastructure<br/>ValidFlow.Infrastructure] -.Dépend de.-> C
+        D -->|Implémente| E[IClientRepository]
+        D -->|Implémente| F[IEmailService]
+        D -->|Implémente| G[IFileWriter]
+        E --> H[(SQL Server<br/>EF Core 8)]
+        F --> I[MailKit]
+        G --> J[File System]
+        K[Tests<br/>ValidFlow.Tests] --> C
+    end
+    
+    style C fill:#d4edda,stroke:#28a745,stroke-width:4px
+    style A fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style B fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style D fill:#e7f3ff,stroke:#0d6efd,stroke-width:2px
+    style K fill:#fff,stroke:#6c757d,stroke-width:2px,stroke-dasharray: 5 5
+```
+
+**✅ Avantages** :
+- Domain isolé = testable en 15ms (pas besoin SQL/SMTP)
+- Secrets externalisés (Azure Key Vault)
+- Async/Await = scalabilité ×10-100
+- Cross-platform (Linux/Docker)
 
 ---
 
@@ -71,17 +173,15 @@ graph LR
 
 ### 💬 Analyse Collective
 
-**Question à la Salle** :
+**Question à réfléchir** :
 
 > "Si vous devez modifier une règle de validation dans ce code legacy, combien de temps vous faut-il pour être **certain** que cette modification ne cassera rien en production ?"
 
-**🎤 Instruction Formateur** :
-- Posez la question
-- **Silence 5-8 secondes** (laissez les stagiaires réfléchir)
-- Accueillez 2-3 réponses de la salle
-- Synthétisez : "**Des heures, voire des jours**. Pourquoi ? Parce qu'il n'y a aucun test automatique. Vous devez tester manuellement SQL + SMTP + XML. Et même comme ça, vous n'êtes jamais sûr à 100%."
+**Prenez 5-8 secondes pour réfléchir avant de répondre dans le chat.**
 
-**Objectif** : Faire prendre conscience que le vrai problème n'est pas la complexité technique, mais l'**impossibilité de tester**.
+**Réponse attendue** : **Des heures, voire des jours**. Pourquoi ? Parce qu'il n'y a aucun test automatique. Vous devez tester manuellement SQL + SMTP + XML. Et même comme ça, vous n'êtes jamais sûr à 100%.
+
+**Constat** : Le vrai problème n'est pas la complexité technique, mais l'**impossibilité de tester** sans infrastructure complète.
 
 ---
 
@@ -91,12 +191,14 @@ graph LR
 
 **Mission** : Vous êtes le **Détective du Code Legacy**. Votre objectif est d'identifier 5 problèmes critiques dans le fichier `ValidFlow.Legacy/Program.cs`, un problème par catégorie.
 
-**Durée** : 15 minutes
+**⏱️ Durée** : 15 minutes
 
-**Fichier à analyser** :
+**📂 Fichier à analyser** :
 ```
 02_Atelier_Stagiaires/ValidFlow.Legacy/Program.cs
 ```
+
+**Commencez maintenant !**
 
 **Format de Réponse** :
 
@@ -139,61 +241,9 @@ Coût Estimé : [Montant ou pourcentage]
 
 ### 🔗 Solution Complète
 
-La solution détaillée est disponible ici :
+La solution détaillée sera partagée par le formateur après l'exercice :
 
 📂 `Solutions_A_Partager/J1_S1_Solution_09h00_Analyse.md`
-
-**Le formateur partagera le lien après l'exercice.**
-
----
-
-### 🎤 Scripts Téléprompter (Formateur)
-
-#### Script Ouverture Session (2 minutes)
-
-> "Bonjour à tous et bienvenue pour ce premier jour de formation. Ce matin, on va faire quelque chose d'inhabituel.
->
-> Au lieu de commencer par coder, on va **auditer** le code legacy. Pourquoi ? Parce qu'avant de refactoriser, il faut **prouver** que le code est dangereux. Sinon, votre manager ne vous donnera jamais 5 jours pour le moderniser.
->
-> **[PAUSE 3 secondes]**
->
-> Vous allez chercher 5 problèmes critiques dans `ValidFlow.Legacy/Program.cs`. Un problème de **Sécurité**, un de **Performance**, un de **Robustesse**, un de **Maintenabilité** et un de **Déploiement**.
->
-> L'objectif n'est pas de trouver des bugs, mais de documenter la **dette technique** avec un **coût business chiffré**. C'est ce qui convaincra votre direction d'investir dans le refactoring."
-
-**Durée** : 2 minutes  
-**Action** : Ouvrir `Program.cs` sur l'écran partagé et montrer rapidement la structure
-
----
-
-#### Script Lancement Exercice (1 minute)
-
-> "Vous avez **15 minutes**. Ouvrez le fichier `Program.cs` et cherchez 5 problèmes, un par catégorie.
->
-> Pour chaque problème : notez les **numéros de ligne**, l'**impact business** et le **coût estimé**.
->
-> **[PAUSE 2 secondes]**
->
-> Top chrono !"
-
-**Action** : Lancer un chronomètre visible projeté à l'écran (15:00)  
-**Durée** : 1 minute
-
----
-
-### ⏱️ Timing Détaillé
-
-| Horaire | Section | Durée | Cumul |
-|---------|---------|-------|-------|
-| 09h00 | 🧠 Concepts Fondamentaux | 10 min | 10 min |
-| 09h10 | 💡 L'Astuce Pratique (SOLID) | 5 min | 15 min |
-| 09h15 | 💬 Analyse Collective (Question) | 5 min | 20 min |
-| 09h20 | 🎤 Script Lancement + Consignes | 2 min | 22 min |
-| 09h22 | ⚙️ Exercice Pratique (Stagiaires) | 15 min | 37 min |
-| 09h37 | Surveillance Chat + Déblocages | 8 min | 45 min |
-| 09h45 | 🔗 Correction Collective + Solution Drive | 15 min | 60 min |
-
-**Total Session** : 1h00
 
 ---
 
