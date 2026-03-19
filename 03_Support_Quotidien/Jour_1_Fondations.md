@@ -91,19 +91,28 @@ La **dette technique** représente le coût caché du code qui fonctionne aujour
 
 ```mermaid
 graph TB
-    subgraph "Architecture Actuelle (AS-IS) - Monolithe"
-        A[Program.cs<br/>~200 lignes]
-        A -->|Connection String hardcodée| B[(SQL Server<br/>localhost)]
-        A -->|Requête synchrone| B
-        B -->|Données| A
-        A -->|Validation| C[Rules<br/>MandatoryRule<br/>MinLengthRule<br/>MaxLengthRule]
-        C -->|Erreurs?| D{Validation}
-        D -->|❌ Erreurs| E[SmtpClient<br/>Password hardcodé]
-        D -->|✅ OK| F[XElement<br/>output.xml]
-        E -->|Email| G[admin@company.com]
-        F -->|Fichier| H[Système fichiers]
+
+    subgraph ASIS["Architecture Actuelle (AS-IS) - Monolithe"]
+        A["Program.cs<br/>~200 lignes"]
+        B[("SQL Server<br/>localhost")]
+        C["Rules<br/>MandatoryRule<br/>MinLengthRule<br/>MaxLengthRule"]
+        D{"Validation"}
+        E["SmtpClient<br/>Password hardcodé"]
+        F["XElement<br/>output.xml"]
+        G["admin@company.com"]
+        H["Système fichiers"]
+
+        A -->|"Connection String hardcodée"| B
+        A -->|"Requête synchrone"| B
+        B -->|"Données"| A
+        A -->|"Validation"| C
+        C -->|"Erreurs ?"| D
+        D -->|"❌ Erreurs"| E
+        D -->|"✅ OK"| F
+        E -->|"Email"| G
+        F -->|"Fichier"| H
     end
-    
+
     style A fill:#f8d7da,stroke:#dc3545,stroke-width:3px
     style B fill:#fff3cd,stroke:#ffc107,stroke-width:2px
     style E fill:#fff3cd,stroke:#ffc107,stroke-width:2px
@@ -251,11 +260,245 @@ La solution détaillée sera partagée par le formateur après l'exercice :
 
 ---
 
-## ⏸️ Sessions 2-4 : En Cours de Génération
+## Session 2 - 10h40 : Scaffolding de la Clean Architecture
 
-Les sessions suivantes seront ajoutées après validation de la Session 1.
+### 📢 Ouverture de Session
+
+Maintenant que nous avons identifié les 5 anti-patterns du code legacy, nous allons créer l'architecture cible. Cette session est **100% pratique** : vous allez créer 5 projets .NET 8 via la ligne de commande.
+
+Objectif : Remplacer le monolithe `Program.cs` par une architecture testable en couches indépendantes.
+
+À la fin de cette session, vous aurez une structure de projet professionnelle, prête à accueillir le code métier que nous migrerons cet après-midi.
+
+### 🧠 Concepts Fondamentaux
+
+#### Qu'est-ce que la Clean Architecture ?
+
+La **Clean Architecture** (Robert C. Martin, 2012) organise le code en couches concentriques, avec une règle d'or : **les dépendances pointent toujours vers le centre**.
+
+**Les 5 Couches** :
+
+| Couche | Rôle | Dépendances | Exemple |
+|--------|------|-------------|---------|
+| **Domain** | Cœur métier (entités, règles) | **Zéro** | `Client`, `IValidationRule` |
+| **Application** | Cas d'usage (orchestration) | Domain uniquement | `ValidateClientUseCase` |
+| **Infrastructure** | Accès données, SMTP, fichiers | Domain (interfaces) | `SqlClientRepository`, `SmtpEmailService` |
+| **Console** | Point d'entrée utilisateur | Application | `Program.cs` (nouveau) |
+| **Tests** | Tests unitaires | Domain | `ClientTests.cs` |
+
+**Principe Clé : Inversion de Dépendances**
+
+Dans le code legacy, `Program.cs` dépend de SQL Server (couplage fort). Dans la Clean Architecture, c'est l'inverse :
+- Le **Domain** définit une interface `IClientRepository`
+- L'**Infrastructure** implémente cette interface avec SQL Server
+- Le Domain ne connaît **jamais** SQL Server
+
+Résultat : On peut tester le Domain sans base de données.
+
+---
+
+### 🏗️ Architecture Cible (Diagramme Complet)
+
+```mermaid
+graph TB
+    subgraph LAYERS["Clean Architecture - 5 Couches"]
+        CONSOLE["Console App<br/>ValidFlow.Console<br/>(Point d'entrée)"]
+        APP["Application Layer<br/>ValidFlow.Application<br/>(Use Cases)"]
+        DOMAIN(("Domain Core<br/>ValidFlow.Domain<br/>(Entités + Règles)<br/>⚠️ ZÉRO dépendance"))
+        INFRA["Infrastructure<br/>ValidFlow.Infrastructure<br/>(SQL + SMTP + Files)"]
+        TESTS["Tests Unitaires<br/>ValidFlow.Tests<br/>(xUnit)"]
+    end
+    
+    subgraph INTERFACES["Interfaces (Contrats)"]
+        IREPO["IClientRepository"]
+        IEMAIL["IEmailService"]
+        IFILE["IFileWriter"]
+    end
+    
+    subgraph IMPLEMENTATIONS["Implémentations Concrètes"]
+        SQLREPO["SqlClientRepository<br/>(Entity Framework Core)"]
+        SMTP["SmtpEmailService<br/>(MailKit)"]
+        FILEWRITER["XmlFileWriter"]
+    end
+    
+    CONSOLE --> APP
+    APP --> DOMAIN
+    INFRA -.Dépend de.-> DOMAIN
+    TESTS --> DOMAIN
+    
+    DOMAIN --> IREPO
+    DOMAIN --> IEMAIL
+    DOMAIN --> IFILE
+    
+    INFRA --> SQLREPO
+    INFRA --> SMTP
+    INFRA --> FILEWRITER
+    
+    SQLREPO -.Implémente.-> IREPO
+    SMTP -.Implémente.-> IEMAIL
+    FILEWRITER -.Implémente.-> IFILE
+    
+    style DOMAIN fill:#d4edda,stroke:#28a745,stroke-width:4px
+    style CONSOLE fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style APP fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style INFRA fill:#e7f3ff,stroke:#0d6efd,stroke-width:2px
+    style TESTS fill:#fff,stroke:#6c757d,stroke-width:2px,stroke-dasharray: 5 5
+```
+
+**🔴 Erreur Classique** : Mettre Entity Framework Core dans le Domain
+**✅ Règle** : Le Domain ne doit jamais référencer de package NuGet externe
+
+---
+
+### 💡 L'Astuce Pratique
+
+> **Métaphore : L'Île Stérile**
+>
+> Imaginez le **Domain** comme une île isolée au milieu de l'océan.
+>
+> - **Rien n'entre sur l'île** : Pas de bateau SQL Server, pas d'avion SMTP, pas de drone Entity Framework.
+> - **L'île est autonome** : Elle contient uniquement du C# pur (classes, interfaces, records).
+> - **Testable en 15ms** : On peut tester les règles métier sans infrastructure.
+>
+> Si vous êtes tenté d'ajouter une dépendance externe au Domain, posez-vous cette question : **"Est-ce que cette dépendance existera encore dans 10 ans ?"**
+>
+> - SQL Server peut être remplacé par PostgreSQL → ❌ Pas dans le Domain
+> - Les règles métier "Un nom doit contenir 2 caractères minimum" → ✅ Stable dans le temps
+
+---
+
+### 💬 Analyse Collective
+
+**Question à réfléchir** :
+
+> "Pourquoi ne pas mettre Entity Framework Core directement dans le projet Domain pour simplifier l'accès aux données ?"
+
+**Prenez 5-8 secondes pour réfléchir avant de répondre dans le chat.**
+
+**Réponse attendue** : Parce qu'Entity Framework Core est une **dépendance externe** (package NuGet). Si vous changez de base de données (PostgreSQL, MongoDB) ou d'ORM (Dapper), vous devrez modifier le Domain. Or le Domain doit être **stable** et **testable sans infrastructure**.
+
+**Constat** : L'isolation du Domain garantit que les règles métier survivent aux changements technologiques.
+
+---
+
+### ⚙️ Défi d'Application
+
+**Mission** : Créer les 5 projets .NET 8 qui formeront l'architecture Clean.
+
+**⏱️ Durée** : 30 minutes
+
+**📂 Structure Finale Cible** :
+
+```
+02_Atelier_Stagiaires/
+├─ ValidFlow.Legacy/          (Ne pas toucher - code legacy)
+└─ ValidFlow.Modern/
+   ├─ ValidFlow.Domain/        (Classlib - Cœur métier)
+   ├─ ValidFlow.Application/   (Classlib - Use Cases)
+   ├─ ValidFlow.Infrastructure/(Classlib - SQL/SMTP/Files)
+   ├─ ValidFlow.Console/       (Console App - Point d'entrée)
+   ├─ ValidFlow.Tests/         (xUnit - Tests unitaires)
+   └─ ValidFlow.Modern.sln     (Solution globale)
+```
+
+**Commencez maintenant !**
+
+**Étapes** :
+
+1. **Créer le dossier racine** :
+   ```bash
+   cd 02_Atelier_Stagiaires
+   mkdir ValidFlow.Modern
+   cd ValidFlow.Modern
+   ```
+
+2. **Créer les 5 projets** (dans cet ordre précis) :
+   ```bash
+   # 1. Domain (cœur - zéro dépendance)
+   dotnet new classlib -n ValidFlow.Domain
+   
+   # 2. Tests (référence Domain)
+   dotnet new xunit -n ValidFlow.Tests
+   
+   # 3. Application (orchestration)
+   dotnet new classlib -n ValidFlow.Application
+   
+   # 4. Infrastructure (implémentations)
+   dotnet new classlib -n ValidFlow.Infrastructure
+   
+   # 5. Console (point d'entrée)
+   dotnet new console -n ValidFlow.Console
+   ```
+
+3. **Créer la solution** :
+   ```bash
+   dotnet new sln -n ValidFlow.Modern
+   dotnet sln add **/*.csproj
+   ```
+
+4. **Ajouter les références entre projets** :
+   ```bash
+   # Tests → Domain
+   dotnet add ValidFlow.Tests/ValidFlow.Tests.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj
+   
+   # Application → Domain
+   dotnet add ValidFlow.Application/ValidFlow.Application.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj
+   
+   # Infrastructure → Domain
+   dotnet add ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj reference ValidFlow.Domain/ValidFlow.Domain.csproj
+   
+   # Console → Application + Infrastructure
+   dotnet add ValidFlow.Console/ValidFlow.Console.csproj reference ValidFlow.Application/ValidFlow.Application.csproj
+   dotnet add ValidFlow.Console/ValidFlow.Console.csproj reference ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+   ```
+
+5. **Valider la compilation** :
+   ```bash
+   dotnet build
+   ```
+
+**Critères de Succès** :
+- [ ] 5 projets créés
+- [ ] Solution `.sln` créée
+- [ ] Références projet ajoutées
+- [ ] `dotnet build` passe au vert (0 erreurs)
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Pour démarrer** :
+- **Ordre de création** : Créez d'abord le Domain (projet central), puis les projets qui en dépendent.
+- **Références unidirectionnelles** : Le projet Tests référence Domain, **jamais l'inverse**.
+- **Console vs Application** : Console référence Application, mais **pas Infrastructure directement** (inversion de dépendances).
+
+**Si vous bloquez** :
+- **Erreur CS0234** ("Le type ou le namespace n'existe pas") : Vérifiez l'ordre des références. Avez-vous bien ajouté la référence avec `dotnet add reference` ?
+- **Erreur de compilation** : Lancez `dotnet restore` pour restaurer les packages NuGet.
+- **Confusion sur les références** : Consultez le diagramme Mermaid ci-dessus (flèches = sens des dépendances).
+
+**Pour aller plus loin** :
+- Ouvrez un fichier `.csproj` dans VS Code. Qu'observez-vous dans la section `<ItemGroup>` après avoir ajouté une référence ?
+- Que se passe-t-il si vous essayez de référencer Infrastructure depuis Domain ? (`dotnet add reference ...`)
+
+---
+
+### 🔗 Solution Complète
+
+La solution détaillée sera partagée par le formateur après l'exercice :
+
+📂 `Solutions_A_Partager/J1_S2_Solution_10h40_Architecture.md`
+
+---
+
+**Fin Session 2 - 10h40**
+
+---
+
+## ⏸️ Sessions 3-4 : En Cours de Génération
+
+Les sessions suivantes seront ajoutées après validation de la Session 2.
 
 **Prochaines Sessions** :
-- Session 2 - 10h40 : Scaffolding de la Clean Architecture
 - Session 3 - 13h30 : Implémentation du Cœur Métier (Domain)
 - Session 4 - 15h10 : Modernisation de la Syntaxe (C# 12)
