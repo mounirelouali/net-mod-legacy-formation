@@ -832,9 +832,112 @@ Le formateur va configurer EF Core dans `ValidFlow.Infrastructure`, créer un `D
    
    **Vérification** : La base `ValidFlowDb` est créée avec la table `Clients`.
 
-7. **Tester CRUD basique (Console App)**
+#### 🔍 Visualiser la Base de Données LocalDB
+
+**Méthode 1 : SQL Server Management Studio (SSMS)** - Recommandé
+
+1. Ouvrez **SQL Server Management Studio** (téléchargeable gratuitement)
+2. Connectez-vous à : `Server name: (localdb)\mssqllocaldb`
+3. Développez **Databases** → **ValidFlowDb** → **Tables**
+4. Faites clic droit sur `dbo.Clients` → **Select Top 1000 Rows**
+
+**Méthode 2 : Visual Studio - Explorateur de Serveurs**
+
+1. Dans Visual Studio : **Affichage** → **Explorateur de serveurs** (Ctrl+Alt+S)
+2. Clic droit sur **Connexions de données** → **Ajouter une connexion...**
+3. **Source de données** : Microsoft SQL Server
+4. **Nom du serveur** : `(localdb)\mssqllocaldb`
+5. **Sélectionner ou entrer un nom de base de données** : `ValidFlowDb`
+6. **Tester la connexion** → **OK**
+
+**Méthode 3 : Ligne de commande SQLCMD**
+
+```bash
+# Lister les bases de données
+sqlcmd -S (localdb)\mssqllocaldb -Q "SELECT name FROM sys.databases"
+
+# Voir le contenu de la table Clients
+sqlcmd -S (localdb)\mssqllocaldb -d ValidFlowDb -Q "SELECT * FROM Clients"
+```
+
+**Méthode 4 : Azure Data Studio** (Gratuit, léger, cross-platform)
+
+1. Téléchargez [Azure Data Studio](https://aka.ms/azuredatastudio)
+2. **Nouvelle connexion** → **Microsoft SQL Server**
+3. **Serveur** : `(localdb)\mssqllocaldb`
+4. **Authentification** : Windows Authentication
+5. **Base de données** : `ValidFlowDb`
+
+> 💡 **Astuce** : Azure Data Studio est plus léger que SSMS et suffisant pour la formation.
+
+#### 🚨 Dépannage : "Je ne trouve pas la base ValidFlowDb"
+
+**Problème** : La base `ValidFlowDb` n'apparaît pas dans SSMS ou Visual Studio.
+
+**Causes possibles** :
+
+1. **Migration non appliquée** (cause la plus fréquente)
    
-   **Fichier** : `ValidFlow.Console/Program.cs`
+   **Vérification** :
+   ```bash
+   cd ValidFlow.Infrastructure
+   dotnet ef database update
+   ```
+   
+   Si vous voyez `Done.`, la base est créée. Si erreur `No DbContext found`, vérifiez que `AppDbContext` existe.
+
+2. **Connexion au mauvais serveur SQL**
+   
+   ⚠️ **ERREUR FRÉQUENTE** : Vous êtes connecté à votre **SQL Server principal** au lieu de **LocalDB**.
+   
+   **Vérification** :
+   - Dans Visual Studio → **Explorateur de serveurs**
+   - Regardez le nom du serveur connecté :
+     - ❌ **Mauvais** : `PC-DIGITAR (SQL Server 16.0)` ou `localhost` ou `(local)`
+     - ✅ **Correct** : `(localdb)\mssqllocaldb`
+   
+   **Correction** :
+   - Clic droit sur **Connexions de données** → **Ajouter une connexion**
+   - **Nom du serveur** : `(localdb)\mssqllocaldb` (PAS `localhost` !)
+   - **Base de données** : `ValidFlowDb`
+
+3. **LocalDB non installé**
+   
+   **Vérification** :
+   ```bash
+   sqllocaldb info
+   ```
+   
+   **Résultat attendu** :
+   ```
+   MSSQLLocalDB
+   ```
+   
+   Si erreur `'sqllocaldb' is not recognized`, installez **SQL Server Express LocalDB** :
+   - Via Visual Studio Installer → **Modifier** → **Stockage et traitement de données** → **SQL Server Express LocalDB**
+   - Ou téléchargez : https://learn.microsoft.com/sql/database-engine/configure-windows/sql-server-express-localdb
+
+4. **Emplacement physique de la base**
+   
+   La base `ValidFlowDb.mdf` est créée dans :
+   ```
+   C:\Users\<VotreNom>\AppData\Local\Microsoft\Microsoft SQL Server Local DB\Instances\MSSQLLocalDB\
+   ```
+   
+   **Vérification** :
+   ```bash
+   sqlcmd -S (localdb)\mssqllocaldb -Q "SELECT name, physical_name FROM sys.master_files WHERE database_id = DB_ID('ValidFlowDb')"
+   ```
+
+**Résumé** :
+- ✅ LocalDB installé : `sqllocaldb info`
+- ✅ Migration appliquée : `dotnet ef database update`
+- ✅ Connexion au bon serveur : `(localdb)\mssqllocaldb` (PAS `localhost`)
+- ✅ Base visible dans SSMS ou Visual Studio
+
+---
+
+8. **Tester CRUD basique (Console App)**
    ```csharp
    using ValidFlow.Domain.Entities;
    using ValidFlow.Infrastructure.Data;
@@ -981,6 +1084,7 @@ Le formateur va configurer EF Core dans `ValidFlow.Infrastructure`, créer un `D
 - **Erreur "NU1202 - Package incompatible"** : Version EF Core trop récente → Utilisez `--version 9.0.3`
 - **Erreur "Build failed"** : Vérifiez les versions avec `dotnet list package`, supprimez packages incompatibles
 - **Erreur connexion SQL** : Vérifiez que SQL Server LocalDB est installé (`sqllocaldb info`)
+- **Base ValidFlowDb introuvable** : Vérifiez que vous êtes connecté à `(localdb)\mssqllocaldb` et non à `localhost` ou votre SQL Server principal
 
 **Pour aller plus loin** :
 - Ajoutez une propriété `Phone` à `Client` et créez une nouvelle migration
