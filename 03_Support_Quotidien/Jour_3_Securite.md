@@ -385,37 +385,47 @@ Une fois l'exercice terminé, la **solution complète** sera partagée sur le Dr
 
 ---
 
-### 🎤 Scripts Téléprompter
+### 📋 Consignes de Session
 
-#### Script 1 : Ouverture Session (2 min)
+#### 📢 Ouverture de Session (2 minutes)
 
-> "Bonjour à tous ! Nous attaquons le Jour 3, et aujourd'hui, on va s'occuper de quelque chose de **CRITIQUE** pour la sécurité : la configuration.
->
-> Levez la main si vous avez déjà vu un mot de passe SQL **en clair** dans un fichier `App.config` ou dans le code source.
->
-> *[Attendre levées de main - normalement toute la salle]*
->
-> Exactement. Et combien d'entre vous ont ce code sur **GitHub public** ou **un serveur accessible** ?
->
-> *[Quelques mains restent levées - rires nerveux]*
->
-> C'est pas drôle, mais c'est la réalité de beaucoup de projets legacy. **Aujourd'hui, on règle ce problème définitivement.**
->
-> On va voir comment .NET 8 permet d'externaliser TOUTE la configuration, de la rendre **testable**, et de séparer les secrets du code. C'est parti !"
+**Objectif** : Créer une prise de conscience du risque de sécurité lié aux configurations hardcodées  
+**Message clé** : La configuration en clair est un vecteur d'attaque majeur en production
+
+Bonjour à tous ! Nous attaquons le Jour 3, et aujourd'hui, on va s'occuper de quelque chose de **CRITIQUE** pour la sécurité : la configuration.
+
+**Question interactive** : Qui a déjà vu un mot de passe SQL **en clair** dans un fichier `App.config` ou dans le code source ?
+
+*(La majorité des participants devrait lever la main - c'est un problème répandu)*
+
+Et combien d'entre vous ont ce code sur **GitHub public** ou **un serveur accessible** ?
+
+*(Quelques mains restent levées - moment de prise de conscience)*
+
+C'est la réalité de beaucoup de projets legacy. **Aujourd'hui, on règle ce problème définitivement.**
+
+On va voir comment .NET 8 permet d'externaliser TOUTE la configuration, de la rendre **testable**, et de séparer les secrets du code. C'est parti !
 
 ---
 
-#### Script 2 : Lancement Défi (2 min)
+#### ⚡ Lancement du Défi d'Application (2 minutes)
 
-> "Parfait, vous avez maintenant vu le pattern IOptions en action. Maintenant, à vous de jouer !
->
-> **Votre mission** : Vous avez un service `BatchProcessor` avec deux valeurs hardcodées : le chemin de sortie et la taille des lots. Vous allez externaliser ces deux valeurs dans `appsettings.json` en utilisant le pattern IOptions.
->
-> Vous avez **20 minutes**. Objectif : quand vous lancez l'application, elle doit afficher `Traitement par lots de 100 vers Output/Reports`, mais ces valeurs doivent venir de `appsettings.json`, **PAS du code**.
->
-> Si vous bloquez, n'hésitez pas à poser des questions dans le chat ou à consulter les **Pistes de Réflexion** juste en dessous de l'exercice.
->
-> Le chronomètre démarre... **maintenant** !"
+**Objectif** : Mise en pratique du pattern IOptions  
+**Durée** : 20 minutes  
+**Critère de réussite** : Valeurs lues depuis `appsettings.json`, pas du code
+
+Parfait, vous avez maintenant vu le pattern IOptions en action. Maintenant, à vous de jouer !
+
+**Votre mission** : Vous avez un service `BatchProcessor` avec deux valeurs hardcodées : le chemin de sortie et la taille des lots. Vous allez externaliser ces deux valeurs dans `appsettings.json` en utilisant le pattern IOptions.
+
+Vous avez **20 minutes**. Objectif : quand vous lancez l'application, elle doit afficher `Traitement par lots de 100 vers Output/Reports`, mais ces valeurs doivent venir de `appsettings.json`, **PAS du code**.
+
+💡 **Ressources disponibles** :
+- Pistes de Réflexion (section ci-dessous)
+- Questions dans le chat
+- Documentation en ligne
+
+Le chronomètre démarre... **maintenant** !
 
 ---
 
