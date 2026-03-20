@@ -422,6 +422,35 @@ refactor(domain): Migration Client vers record C# 12
 
 ## 🚀 Workflow de Génération
 
+### Règle Obligatoire : Consultation NotebookLM Avant Chaque Session (Jours 3-5)
+
+**⚠️ RÈGLE CRITIQUE** : Pour les Jours 3, 4 et 5, avant de commencer la génération de CHAQUE session, l'agent DOIT :
+
+1. **Informer le USER** qu'il va consulter NotebookLM
+2. **Se connecter à NotebookLM** et interroger les notebooks suivants :
+   - **"TECHNIQUE net-mod-legacy WETIC-Solene - Dev .NET Moderne"**
+   - **"ELEARNING - WETIC"**
+3. **Extraire le contexte technique** pertinent pour la session en cours
+4. **Générer la session** en s'appuyant sur les informations NotebookLM + instructions USER
+
+**Notebooks de référence** :
+- `TECHNIQUE net-mod-legacy WETIC-Solene - Dev .NET Moderne` : Contexte technique, architecture, contraintes
+- `ELEARNING - WETIC` : Pédagogie, exemples, exercices
+
+**Processus** :
+```
+1. USER demande Session X
+2. Agent informe : "Je consulte NotebookLM pour cette session..."
+3. Agent appelle mcp1_notebook_query avec query spécifique à la session
+4. Agent génère le support en combinant NotebookLM + instructions USER
+5. Agent génère la solution Drive
+6. Agent commit
+```
+
+**Validation** : Ne jamais inventer du contenu technique pour Jours 3-5 sans consulter NotebookLM.
+
+---
+
 ### Règle Obligatoire : Génération Automatique des Solutions
 
 **⚠️ RÈGLE CRITIQUE** : À chaque fois qu'une session est terminée et qu'un défi d'application (⚙️) a été rédigé, l'agent DOIT :
@@ -435,9 +464,9 @@ refactor(domain): Migration Client vers record C# 12
    Où `Jour_X_Nom` est **dynamique** et correspond au nom du dossier du jour en cours :
    - Jour 1 : `Jour_1_Fondations`
    - Jour 2 : `Jour_2_Application`
-   - Jour 3 : `Jour_3_Tests`
-   - Jour 4 : `Jour_4_Deploiement`
-   - Jour 5 : `Jour_5_Production`
+   - Jour 3 : `Jour_3_Securite` (Configuration + Secrets + Services)
+   - Jour 4 : `Jour_4_Tests_Docker` (Tests + Conteneurisation)
+   - Jour 5 : `Jour_5_CICD_Bilan` (CI/CD + Documentation + Bilan)
 
 3. **Nommer le fichier solution** : `JX_SY_SOLUTION_NomSession.md`
    - Exemple : `J2_S3_SOLUTION_REPOSITORY_PATTERN.md`
