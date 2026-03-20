@@ -1994,6 +1994,41 @@ namespace ValidFlow.Domain.Entities;
 public record Client(int Id, string Name, string Email, string? Phone); // ✅ Ajout Phone
 ```
 
+### Étape 1b : Configurer les Références de Projet (IMPORTANT)
+
+⚠️ **Prérequis Critique** : Le projet de démarrage (`ValidFlow.Console`) **DOIT** référencer le projet Infrastructure, sinon EF Core ne peut pas localiser le `DbContext`.
+
+**Vérifier/Ajouter la référence** :
+```bash
+cd ValidFlow.Console
+dotnet add reference ../ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+```
+
+**Fichier `ValidFlow.Console.csproj` (vérifié)** :
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ValidFlow.Domain\ValidFlow.Domain.csproj" />
+    <!-- ✅ NÉCESSAIRE pour EF Core migrations -->
+    <ProjectReference Include="..\ValidFlow.Infrastructure\ValidFlow.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
+```
+
+**Schéma de dépendances** :
+```
+ValidFlow.Console (Startup)
+    ├── ValidFlow.Domain (Entités, Interfaces)
+    └── ValidFlow.Infrastructure (DbContext, EF Core) ← AJOUTER CECI
+```
+
+---
+
 ### Étape 2 : Créer la Migration
 
 ```bash
@@ -2221,7 +2256,10 @@ Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration:
 **Si vous bloquez** :
 - **Erreur "No executable found matching command dotnet-ef"** : Installez `dotnet tool install --global dotnet-ef`
 - **Erreur "No DbContext found"** : Vérifiez le `--startup-project` (doit pointer vers un projet exécutable)
-- **Erreur "Build failed"** : Exécutez `dotnet build` dans Infrastructure avant `dotnet ef migrations add`
+- **Erreur "Build failed" lors de `dotnet ef migrations add`** :
+  - **Cause** : Le projet Console ne référence pas Infrastructure
+  - **Solution** : `cd ValidFlow.Console` puis `dotnet add reference ../ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj`
+  - **Vérification** : `dotnet build` dans Console doit compiler sans erreur
 - **Tests échouent** : Vérifiez que chaque test utilise un `databaseName` UNIQUE (sinon collision)
 
 **Pour aller plus loin** :
