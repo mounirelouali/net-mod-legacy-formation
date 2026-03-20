@@ -422,6 +422,30 @@ refactor(domain): Migration Client vers record C# 12
 
 ## 🚀 Workflow de Génération
 
+### Règle Obligatoire : Génération Automatique des Solutions
+
+**⚠️ RÈGLE CRITIQUE** : À chaque fois qu'une session est terminée et qu'un défi d'application (⚙️) a été rédigé, l'agent DOIT :
+
+1. **Générer automatiquement la solution complète** (sans attendre instruction USER)
+2. **Placer la solution dans le répertoire Drive partagé correspondant au jour** :
+   ```
+   G:\Drive partagés\wetic-s\modules\net-mod-legacy\net-mod-legacy_master_documents\Jour_X_Nom\Solutions_A_Partager\
+   ```
+   
+   Où `Jour_X_Nom` est **dynamique** et correspond au nom du dossier du jour en cours :
+   - Jour 1 : `Jour_1_Fondations`
+   - Jour 2 : `Jour_2_Application`
+   - Jour 3 : `Jour_3_Tests`
+   - Jour 4 : `Jour_4_Deploiement`
+   - Jour 5 : `Jour_5_Production`
+
+3. **Nommer le fichier solution** : `JX_SY_SOLUTION_NomSession.md`
+   - Exemple : `J2_S3_SOLUTION_REPOSITORY_PATTERN.md`
+
+**Validation** : Aucune session n'est considérée complète tant que la solution n'est pas dans le Drive partagé.
+
+---
+
 ### Processus par Story (Sprint)
 
 ```mermaid
@@ -430,17 +454,18 @@ graph TD
     B --> C[Lire Architecture + Context]
     C --> D[Générer Support Quotidien]
     D --> E[Générer Solution Drive]
-    E --> F[Auto-Validation Qualité]
-    F --> G{Checklist OK?}
-    G -->|Non| H[Auto-Correction]
-    H --> F
-    G -->|Oui| I[Commit Git]
-    I --> J[Cocher Task Tracking]
-    J --> K[PAUSE - Attente USER]
-    K --> L{USER GO?}
-    L -->|Non| M[Corrections Feedback]
-    M --> H
-    L -->|Oui| N[Story DONE]
+    E --> F[Placer Solution dans Drive Partagé]
+    F --> G[Auto-Validation Qualité]
+    G --> H{Checklist OK?}
+    H -->|Non| I[Auto-Correction]
+    I --> G
+    H -->|Oui| J[Commit Git]
+    J --> K[Cocher Task Tracking]
+    K --> L[PAUSE - Attente USER]
+    L --> M{USER GO?}
+    M -->|Non| N[Corrections Feedback]
+    N --> I
+    M -->|Oui| O[Story DONE]
 ```
 
 ---
