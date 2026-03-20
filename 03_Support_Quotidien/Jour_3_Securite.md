@@ -429,5 +429,510 @@ Le chronomètre démarre... **maintenant** !
 
 ---
 
-**🔗 Prochaine session** : Gestion des Secrets (10h40)
+## 🕐 Session 2 (10h40 - 12h10) : Gestion des Secrets (Secure Coding)
+
+**Durée** : 1h30  
+**Niveau** : ⭐⭐⭐ Avancé (Sécurité)
+
+### 🎯 Objectif de Performance
+
+À la fin de cette session, vous serez capable de **sécuriser tous les credentials** (mots de passe, API keys, tokens) en utilisant **.NET Secret Manager** pour le développement et en comprenant les stratégies de production (Variables d'Environnement, Azure Key Vault).
+
+**Transformation visée** :
+```csharp
+// ❌ AVANT (.NET Framework)
+string smtpPassword = "MotDePasseEnClair123!"; // 😱 Dans le code source !
+
+// ✅ APRÈS (.NET 8)
+public EmailService(IOptions<SmtpOptions> options)
+{
+    string smtpPassword = options.Value.Password; // ✅ Depuis User Secrets ou Key Vault
+}
+```
+
+---
+
+### 🧠 Concepts Fondamentaux
+
+#### 💡 Métaphore : Le Coffre-Fort vs Le Paillasson
+
+<img src="../05_Ressources_Visuelles/J3_S2_INFOGRAPHIE_SECRETS.png" alt="Infographie Gestion des Secrets" style="max-width:100%; height:auto;">
+
+> **La clé sous le paillasson vs le coffre-fort biométrique** 🔐
+> 
+> **Dans l'ancien monde (.NET Framework)** :
+> - Stocker un mot de passe dans `Web.config` = laisser la clé de votre maison sous le paillasson
+> - Toute personne avec accès au code source (le paillasson) peut trouver la clé
+> - Si vous commitez sur Git → **la clé est publique pour toujours**
+>
+> **Avec .NET 8, la philosophie change** :
+> - **En développement (Le Chantier)** : Vous utilisez le **.NET Secret Manager**. C'est comme donner un badge temporaire aux ouvriers. Ce badge n'est valide que sur leur machine locale et **n'est jamais rangé avec les plans de la maison** (le code source).
+> - **En production (La Maison terminée)** : Vous utilisez des **Variables d'environnement** ou un **Azure Key Vault**. C'est un coffre-fort biométrique de haute sécurité. Les clés ne sont injectées qu'au moment d'entrer dans la maison, directement dans la serrure (la mémoire de l'application).
+
+---
+
+#### 📚 Qu'est-ce qu'un "Secret" ?
+
+Un **secret** est toute donnée sensible qui, si exposée, pourrait compromettre la sécurité de votre application ou de vos utilisateurs.
+
+**Exemples de secrets** :
+- Mots de passe de base de données
+- Clés API (SendGrid, Stripe, Azure, AWS)
+- Tokens d'authentification (JWT secrets)
+- Certificats SSL privés
+- Connection strings avec credentials
+
+**⚠️ Règle d'Or** : **Ne JAMAIS commiter un secret sur Git**, même dans un repository privé.
+
+**Pourquoi ?**
+- L'historique Git est **permanent** (même si vous supprimez le fichier après)
+- Un repository privé peut devenir public par accident
+- Les employés qui quittent l'entreprise conservent l'accès à leurs clones locaux
+- Les services comme GitHub scannent automatiquement les secrets et vous alertent (mais le mal est fait)
+
+---
+
+### 🔐 Le .NET Secret Manager (Développement uniquement)
+
+**Qu'est-ce que c'est ?**
+
+Le **Secret Manager** est un outil CLI intégré à .NET qui stocke vos secrets **en dehors de l'arborescence du projet**, dans un fichier `secrets.json` caché.
+
+**Où sont stockés les secrets ?**
+- **Windows** : `%AppData%\Microsoft\UserSecrets\<GUID>\secrets.json`
+- **macOS/Linux** : `~/.microsoft/usersecrets/<GUID>/secrets.json`
+
+**Important** : Les secrets ne sont **pas chiffrés** sur le disque, mais ils sont **hors Git** par défaut.
+
+---
+
+#### Étape 1 : Initialiser le Secret Manager
+
+Dans le dossier de votre projet (où se trouve le `.csproj`), exécutez :
+
+```bash
+dotnet user-secrets init
+```
+
+**Ce que ça fait** :
+- Ajoute un `<UserSecretsId>` unique dans votre fichier `.csproj`
+- Crée le fichier `secrets.json` dans le dossier système utilisateur
+
+**Vérification dans le `.csproj`** :
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <UserSecretsId>a1b2c3d4-e5f6-7890-abcd-ef1234567890</UserSecretsId>
+  </PropertyGroup>
+</Project>
+```
+
+---
+
+#### Étape 2 : Ajouter des secrets
+
+**Syntaxe** :
+```bash
+dotnet user-secrets set "Cle:SousCle" "Valeur"
+```
+
+**Exemples** :
+```bash
+# Secret SMTP
+dotnet user-secrets set "Smtp:Password" "MonSuperMotDePasseSecret123!"
+
+# Secret Base de Données
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=monServeur;Database=maDb;User Id=admin;Password=MotDePasseDB!"
+
+# API Key externe
+dotnet user-secrets set "SendGrid:ApiKey" "SG.abc123def456ghi789"
+```
+
+**Notation hiérarchique** : Le délimiteur `:` crée une structure JSON imbriquée.
+
+**Résultat dans `secrets.json`** :
+```json
+{
+  "Smtp": {
+    "Password": "MonSuperMotDePasseSecret123!"
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=monServeur;Database=maDb;User Id=admin;Password=MotDePasseDB!"
+  },
+  "SendGrid": {
+    "ApiKey": "SG.abc123def456ghi789"
+  }
+}
+```
+
+---
+
+#### Étape 3 : Lire les secrets via IOptions (comme Session 1)
+
+**Fichier `SmtpOptions.cs`** :
+```csharp
+namespace ValidFlow.Infrastructure.Options;
+
+public class SmtpOptions
+{
+    public string Host { get; set; } = string.Empty;
+    public int Port { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty; // ✅ Sera lu depuis User Secrets
+}
+```
+
+**Fichier `appsettings.json`** (données non sensibles uniquement) :
+```json
+{
+  "Smtp": {
+    "Host": "smtp.example.com",
+    "Port": 587,
+    "Username": "contact@validflow.com"
+  }
+}
+```
+
+**⚠️ PAS de mot de passe ici !** Le mot de passe est dans `secrets.json` (hors Git).
+
+**Fichier `Program.cs`** :
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using ValidFlow.Infrastructure.Options;
+
+var builder = Host.CreateDefaultBuilder(args); // ✅ Charge automatiquement User Secrets si environnement = Development
+
+builder.ConfigureServices((context, services) =>
+{
+    // Bind la section "Smtp" qui fusionne appsettings.json + secrets.json
+    services.Configure<SmtpOptions>(
+        context.Configuration.GetSection("Smtp"));
+    
+    services.AddTransient<EmailService>();
+});
+
+var host = builder.Build();
+
+// Test de lecture du secret
+var emailService = host.Services.GetRequiredService<EmailService>();
+emailService.Connect();
+```
+
+**Fichier `EmailService.cs`** :
+```csharp
+using Microsoft.Extensions.Options;
+using ValidFlow.Infrastructure.Options;
+
+namespace ValidFlow.Infrastructure.Services;
+
+public class EmailService
+{
+    private readonly SmtpOptions _smtpOptions;
+
+    public EmailService(IOptions<SmtpOptions> options)
+    {
+        _smtpOptions = options.Value;
+    }
+
+    public void Connect()
+    {
+        Console.WriteLine($"Connexion SMTP à {_smtpOptions.Host}:{_smtpOptions.Port}");
+        Console.WriteLine($"Utilisateur : {_smtpOptions.Username}");
+        Console.WriteLine($"Mot de passe : {new string('*', _smtpOptions.Password.Length)}"); // Masqué
+        
+        // TODO: Vraie connexion SMTP ici
+    }
+}
+```
+
+**🔑 Principe clé** : Le code **reste identique** que les secrets viennent de `appsettings.json`, `secrets.json` ou d'Azure Key Vault. Seule la **source** change.
+
+---
+
+### 🌐 Gestion des Secrets en Production
+
+**❌ User Secrets ne fonctionne PAS en production** : Ils ne sont chargés que si `ASPNETCORE_ENVIRONMENT=Development`.
+
+**✅ Deux solutions pour la production** :
+
+---
+
+#### Solution 1 : Variables d'Environnement (Simple)
+
+**Principe** : Les secrets sont définis comme variables d'environnement sur le serveur/conteneur.
+
+**Syntaxe pour .NET** :
+- Remplacer les `:` (deux-points) par `__` (double underscore)
+- Exemple : `Smtp:Password` devient `Smtp__Password`
+
+**Configuration sur Azure App Service** (exemple) :
+1. Aller dans Configuration → Application Settings
+2. Ajouter :
+   - Nom : `Smtp__Password`
+   - Valeur : `MonMotDePasseProd`
+
+**Configuration avec Docker** :
+```bash
+docker run -e Smtp__Password="MonMotDePasseProd" monapp
+```
+
+**Avantages** :
+- Simple à mettre en place
+- Les secrets ne sont **jamais écrits sur le disque**
+- Ils résident uniquement en mémoire
+
+**Inconvénients** :
+- Pas de rotation automatique des clés
+- Logs et panneaux d'administration peuvent exposer les secrets
+
+---
+
+#### Solution 2 : Azure Key Vault (Recommandé pour l'Entreprise)
+
+**Principe** : Un service Azure dédié qui stocke les secrets avec chiffrement asymétrique, rotation automatique et audit complet.
+
+**Fonctionnalités** :
+- Chiffrement matériel (HSM)
+- Rotation automatique des clés
+- Logs d'accès (qui a lu quel secret, quand)
+- Contrôle d'accès granulaire (RBAC)
+
+**Intégration .NET 8** (aperçu conceptuel uniquement - pas d'implémentation dans ce cours) :
+
+```bash
+# Packages NuGet requis
+dotnet add package Azure.Identity
+dotnet add package Azure.Extensions.AspNetCore.Configuration.Secrets
+```
+
+```csharp
+// Dans Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Connexion à Azure Key Vault
+var keyVaultUrl = new Uri("https://mon-keyvault.vault.azure.net/");
+builder.Configuration.AddAzureKeyVault(keyVaultUrl, new DefaultAzureCredential());
+
+// Le code métier reste identique !
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
+```
+
+**Avantages** :
+- Sécurité maximale
+- Rotation automatique
+- Audit complet
+- Séparation des responsabilités (DevOps gère les secrets, Devs codent)
+
+**Inconvénients** :
+- Coût (environ 5€/mois/Key Vault)
+- Complexité de configuration initiale
+
+---
+
+### � Hiérarchie de Configuration (.NET 8)
+
+**.NET 8 fusionne les sources de configuration dans cet ordre** (les dernières écrasent les premières) :
+
+```
+1. appsettings.json (base commune)
+2. appsettings.Development.json (override Dev)
+3. appsettings.Production.json (override Prod)
+4. User Secrets (si Environment=Development) ← Uniquement DEV
+5. Variables d'environnement (toujours)
+6. Arguments de ligne de commande (toujours)
+7. Azure Key Vault (si configuré) ← Uniquement PROD
+```
+
+**Exemple** :
+
+Fichier `appsettings.json` :
+```json
+{
+  "Smtp": {
+    "Host": "smtp.example.com",
+    "Password": "DefaultPassword"
+  }
+}
+```
+
+Fichier `secrets.json` (Dev) :
+```json
+{
+  "Smtp": {
+    "Password": "DevPassword"
+  }
+}
+```
+
+Variable d'environnement (Prod) :
+```bash
+Smtp__Password=ProdPassword
+```
+
+**Résultat en Dev** : `Password = "DevPassword"` (secrets.json écrase appsettings.json)  
+**Résultat en Prod** : `Password = "ProdPassword"` (variable env écrase tout)
+
+---
+
+### 💬 Analyse Collective (3 min)
+
+#### 📢 Question Interactive
+
+**Question** : "Pourquoi est-ce que je ne peux PAS faire ça en production ?"
+
+```csharp
+var config = new ConfigurationBuilder()
+    .AddUserSecrets<Program>()
+    .Build();
+
+string password = config["Smtp:Password"];
+```
+
+*(Laisser 10 secondes de réflexion)*
+
+**💡 Réponse attendue** :
+
+"Parce que `.AddUserSecrets()` n'est actif que si `ASPNETCORE_ENVIRONMENT=Development`. En production, cette ligne est ignorée et `password` sera `null`."
+
+**✅ Principe** : **Toujours tester en mode Production localement** avant de déployer.
+
+---
+
+### ⚙️ Défi d'Application (25 min)
+
+**Contexte** :
+
+Vous héritez d'un service `DatabaseService` qui se connecte à SQL Server. Actuellement, le mot de passe de la base de données est **hardcodé** dans le code.
+
+**Mission** :
+
+1. Modifier `appsettings.json` pour y mettre la connection string **SANS mot de passe**
+2. Utiliser `dotnet user-secrets` pour stocker la connection string complète (avec mot de passe)
+3. Modifier `DatabaseService` pour injecter `IOptions<ConnectionStrings>` (ou lire via `IConfiguration.GetConnectionString()`)
+4. Tester l'application et vérifier que la connexion fonctionne
+
+**Code de départ** :
+
+```csharp
+public class DatabaseService
+{
+    public void Connect()
+    {
+        string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=ValidFlowDb;User Id=admin;Password=MotDePasseEnClair!"; // 😱 Hardcodé !
+        
+        Console.WriteLine($"Connexion à la base : {connectionString}");
+    }
+}
+```
+
+**Critères de succès** :
+- ✅ `appsettings.json` ne contient AUCUN mot de passe en clair
+- ✅ Commande `dotnet user-secrets list` affiche la connection string complète
+- ✅ `DatabaseService` injecte `IConfiguration` ou `IOptions<T>`
+- ✅ Application affiche : `"Connexion à la base : Server=...Password=***"` (mot de passe masqué)
+- ✅ Un collègue qui clone le repo Git **ne peut PAS** se connecter à la base (il n'a pas le secret)
+
+**Durée** : 25 minutes
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Si vous bloquez, voici quelques indices** :
+
+1. **Initialisation User Secrets** :
+   - Se placer dans le dossier du projet (où se trouve le `.csproj`)
+   - Exécuter `dotnet user-secrets init` en premier
+   - Vérifier que `<UserSecretsId>` apparaît dans le `.csproj`
+
+2. **Ajouter le secret** :
+   - Syntaxe : `dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=...;Password=MonMotDePasse;"`
+   - Bien utiliser `ConnectionStrings:` comme préfixe (convention .NET)
+
+3. **Lire la connection string** :
+   - Option 1 (Simple) : `context.Configuration.GetConnectionString("DefaultConnection")`
+   - Option 2 (Pattern Options) : Créer une classe `ConnectionStringsOptions` et binder `ConnectionStrings`
+
+4. **Masquer le mot de passe dans les logs** :
+   - Utiliser une regex ou `string.Replace("Password=xxx", "Password=***")`
+   - Ou lire uniquement les parties nécessaires (Server, Database)
+
+5. **Troubleshooting** :
+   - Si `null` : Vérifier que `ASPNETCORE_ENVIRONMENT=Development` (ou que vous utilisez `Host.CreateDefaultBuilder`)
+   - Si erreur de connexion : Vérifier que LocalDB est démarré (`sqllocaldb start MSSQLLocalDB`)
+   - Si `UserSecretsId` manquant : Relancer `dotnet user-secrets init`
+
+---
+
+### 🔗 Lien vers la Solution
+
+Une fois l'exercice terminé, la **solution complète** sera partagée sur le Drive partagé.
+
+**Chemin** : `Solutions_A_Partager/J3_S2_SOLUTION_SECRETS.md`
+
+---
+
+### ⏱️ Timing Détaillé
+
+| Activité | Début | Fin | Durée | Cumul |
+|----------|-------|-----|-------|-------|
+| 📢 Ouverture + Métaphore Coffre-Fort | 10h40 | 10h45 | 5 min | 5 min |
+| 🧠 Concepts : Qu'est-ce qu'un Secret ? | 10h45 | 10h50 | 5 min | 10 min |
+| 🔐 Démo : Secret Manager (init + set + read) | 10h50 | 11h05 | 15 min | 25 min |
+| 🌐 Théorie : Variables Env + Azure Key Vault | 11h05 | 11h15 | 10 min | 35 min |
+| 💬 Analyse Collective | 11h15 | 11h18 | 3 min | 38 min |
+| 🎤 Lancement Défi | 11h18 | 11h20 | 2 min | 40 min |
+| ⚙️ Défi d'Application | 11h20 | 11h45 | 25 min | 65 min |
+| 🔗 Correction Collective | 11h45 | 12h05 | 20 min | 85 min |
+| 📝 Synthèse + Questions | 12h05 | 12h10 | 5 min | 90 min |
+
+**Total Session** : **1h30** ✅
+
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (5 minutes)
+
+**Objectif** : Créer une prise de conscience du danger des secrets en clair  
+**Message clé** : User Secrets pour le Dev, Variables Env ou Key Vault pour la Prod
+
+Bienvenue pour cette deuxième session du Jour 3 ! On va maintenant traiter un problème **encore plus critique** que la configuration : les **secrets**.
+
+**Question interactive** : Combien d'entre vous ont déjà committé par accident un mot de passe sur Git ?
+
+*(Quelques mains se lèvent - c'est un problème ultra-fréquent)*
+
+Même si vous supprimez le commit après, **il reste dans l'historique Git à jamais**. Et si votre repo est public, les bots de GitHub scannent en permanence et récupèrent vos secrets en quelques secondes.
+
+Aujourd'hui, vous allez apprendre à **ne PLUS JAMAIS commiter un secret**. On va voir le .NET Secret Manager pour le développement, et les stratégies de production (variables d'environnement et Azure Key Vault).
+
+---
+
+#### ⚡ Lancement du Défi d'Application (2 minutes)
+
+**Objectif** : Sécuriser une connection string avec User Secrets  
+**Durée** : 25 minutes  
+**Critère de réussite** : Mot de passe hors Git, application fonctionne, collègue ne peut PAS se connecter sans secret
+
+Parfait, vous avez vu comment stocker et lire des secrets avec User Secrets. Maintenant, à vous de jouer !
+
+**Votre mission** : Vous avez un service `DatabaseService` avec une connection string hardcodée. Vous allez externaliser cette connection string dans User Secrets.
+
+Vous avez **25 minutes**. Objectif : quand vous lancez l'application, elle doit se connecter à la base, mais le mot de passe ne doit **jamais** apparaître dans Git.
+
+💡 **Ressources disponibles** :
+- Pistes de Réflexion (section ci-dessus)
+- Commande `dotnet user-secrets --help`
+- Documentation Microsoft
+
+Le chronomètre démarre... **maintenant** !
+
+---
+
+**🔗 Prochaine session** : Modernisation des Services Externes (E-mail avec MailKit) - 13h30
 
