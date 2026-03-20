@@ -289,7 +289,167 @@ Créer la session Scaffolding Clean Architecture avec instructions CLI complète
 - [ ] Créer solution Drive
 - [ ] Validation qualité finale Jour 1
 - [ ] Commit Git
-- [ ] Validation USER → GO/NOGO pour V2 (Jours 2-3)
+- [ ] Validation USER → GO/NOGO pour V2 (Jours 2-5)
+
+---
+
+## 🎯 Jour 3 - Epic 3 : Sécuriser la Configuration et les Services
+
+### Sprint 9 - Story FR009 : Session 09h00 - Externalisation Configuration
+
+**Statut** : ⏸️ En attente (dépend de Jour 2)  
+**Durée Estimée** : 1h30  
+**Dépendances** : ✅ FR005 (Dependency Injection)
+
+#### Tâches
+- [ ] **Consulter NotebookLM** (TECHNIQUE + ELEARNING) - OBLIGATOIRE avant génération
+- [ ] Générer `Jour_3_Securite.md` (Session 09h00)
+- [ ] Créer solution Drive `J3_S1_SOLUTION_EXTERNALISATION_CONFIG.md`
+- [ ] Validation qualité (zéro IA + code valide)
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 10 - Story FR010 : Session 10h40 - Gestion Secrets
+
+**Statut** : ⏸️ En attente (dépend de FR009)  
+**Durée Estimée** : 1h30
+
+#### Tâches
+- [ ] Générer Session 10h40 dans `Jour_3_Securite.md`
+- [ ] Créer solution Drive `J3_S2_SOLUTION_SECRETS.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 11 - Story FR011 : Session 13h30 - MailKit
+
+**Statut** : ⏸️ En attente (dépend de FR010)  
+**Durée Estimée** : 2h30
+
+#### Tâches
+- [ ] Générer Session 13h30 dans `Jour_3_Securite.md`
+- [ ] Créer solution Drive `J3_S3_SOLUTION_MAILKIT.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 12 - Story FR012 : Session 15h10 - Logging Sécurisé
+
+**Statut** : ⏸️ En attente (dépend de FR011)  
+**Durée Estimée** : 2h
+
+#### Tâches
+- [ ] Générer Session 15h10 dans `Jour_3_Securite.md`
+- [ ] Créer solution Drive `J3_S4_SOLUTION_LOGGING.md`
+- [ ] Validation qualité finale Jour 3
+- [ ] Commit Git
+- [ ] Validation USER → GO/NOGO pour Jour 4
+
+---
+
+## 🎯 Jour 4 - Epic 4 : Tests et Conteneurisation
+
+### Sprint 13 - Story FR013 : Session 09h00 - Tests Unitaires (xUnit)
+
+**Statut** : ⏸️ En attente (dépend de Jour 3)  
+**Durée Estimée** : 1h30
+
+#### Tâches
+- [ ] **Consulter NotebookLM** - OBLIGATOIRE
+- [ ] Générer `Jour_4_Qualite.md` (Session 09h00)
+- [ ] Créer solution Drive `J4_S1_SOLUTION_TESTS_UNITAIRES.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 14 - Story FR014 : Session 10h40 - Tests Intégration
+
+**Statut** : ⏸️ En attente (dépend de FR013)  
+**Durée Estimée** : 1h30
+
+#### Tâches
+- [ ] Générer Session 10h40 dans `Jour_4_Qualite.md`
+- [ ] Créer solution Drive `J4_S2_SOLUTION_TESTS_INTEGRATION.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 15 - Story FR015 : Session 13h30 - Cross-Platform (Linux)
+
+**Statut** : ⏸️ En attente (dépend de FR014)  
+**Durée Estimée** : 2h30
+
+#### Tâches
+- [ ] Générer Session 13h30 dans `Jour_4_Qualite.md`
+- [ ] Créer solution Drive `J4_S3_SOLUTION_CROSS_PLATFORM.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 16 - Story FR016 : Session 15h10 - Docker
+
+**Statut** : ⏸️ En attente (dépend de FR015)  
+**Durée Estimée** : 2h
+
+#### Tâches
+- [ ] Générer Session 15h10 dans `Jour_4_Qualite.md`
+- [ ] Créer solution Drive `J4_S4_SOLUTION_DOCKER.md`
+- [ ] Validation qualité finale Jour 4
+- [ ] Commit Git
+- [ ] Validation USER → GO/NOGO pour Jour 5
+
+---
+
+## 🎯 Jour 5 - Epic 5 : CI/CD, Documentation et Bilan
+
+### Sprint 17 - Story FR017 : Session 09h00 - GitHub Actions
+
+**Statut** : ⏸️ En attente (dépend de Jour 4)  
+**Durée Estimée** : 1h30
+
+#### Tâches
+- [ ] **Consulter NotebookLM** - OBLIGATOIRE
+- [ ] Générer `Jour_5_CICD_Bilan.md` (Session 09h00)
+- [ ] Créer solution Drive `J5_S1_SOLUTION_GITHUB_ACTIONS.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 18 - Story FR018 : Session 10h40 - Revue Code
+
+**Statut** : ⏸️ En attente (dépend de FR017)  
+**Durée Estimée** : 1h30
+
+#### Tâches
+- [ ] Générer Session 10h40 dans `Jour_5_CICD_Bilan.md`
+- [ ] Créer solution Drive `J5_S2_SOLUTION_REVUE_CODE.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 19 - Story FR019 : Session 13h30 - Documentation
+
+**Statut** : ⏸️ En attente (dépend de FR018)  
+**Durée Estimée** : 2h30
+
+#### Tâches
+- [ ] Générer Session 13h30 dans `Jour_5_CICD_Bilan.md`
+- [ ] Créer solution Drive `J5_S3_SOLUTION_README.md`
+- [ ] Validation qualité
+- [ ] Commit Git
+- [ ] Validation USER
+
+### Sprint 20 - Story FR020 : Session 15h10 - Bilan AS-IS vs TO-BE
+
+**Statut** : ⏸️ En attente (dépend de FR019)  
+**Durée Estimée** : 2h
+
+#### Tâches
+- [ ] Générer Session 15h10 dans `Jour_5_CICD_Bilan.md`
+- [ ] Créer solution Drive `J5_S4_SOLUTION_BILAN.md`
+- [ ] Validation qualité finale Formation complète
+- [ ] Commit Git
+- [ ] Validation USER → 🎉 Formation COMPLÈTE
 
 ---
 

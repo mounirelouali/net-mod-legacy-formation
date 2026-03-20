@@ -346,30 +346,83 @@ journey
 
 ---
 
-### Epic 3 - Jour 3 : Sécurité
+### Epic 3 - Jour 3 : Sécuriser la Configuration et les Services
 
-**FR009 - Session 09h00 : Externalisation Configuration**  
-**FR010 - Session 10h40 : Gestion Secrets**  
-**FR011 - Session 13h30 : Modernisation SMTP (MailKit)**  
-**FR012 - Session 15h10 : Logging Sécurisé**
+**🎯 Enjeu Client** : Éliminer le risque de fuite de données. Obtenir la capacité d'écrire du code sécurisé et professionnel.
+
+**FR009 - Session 09h00 (1h30) : Externalisation de la Configuration**
+- **À faire** : Supprimer toutes les données en dur dans le code (chemins, paramètres)
+- **Objectif** : Création et structuration des fichiers `appsettings.json` et `appsettings.Development.json`. Lecture via le pattern IOptions
+- **Transformation** : Migration de `ConfigurationManager.AppSettings` (XML) vers configuration moderne .NET 8 fortement typée
+- **Livrables** : Classes Options (POCO), fichiers JSON hiérarchiques, service injecté avec IOptions<T>
+
+**FR010 - Session 10h40 (1h30) : Gestion des Secrets (Secure Coding)**
+- **À faire** : Traiter les credentials (mots de passe SQL, identifiants SMTP) hardcodés ligne 99
+- **Objectif** : Mise en place de l'outil .NET Secret Manager pour l'environnement de développement
+- **Théorie** : Variables d'environnement en production et Azure Key Vault
+- **Livrables** : Secrets hors Git, configuration sécurisée, démonstration lecture SMTP depuis User Secrets
+
+**FR011 - Session 13h30 (2h30) : Modernisation des Services Externes (E-mail)**
+- **À faire** : Remplacer le vieux client SMTP obsolète et non sécurisé
+- **Objectif** : Intégration de MailKit. Implémentation d'un service d'envoi d'emails découplé, asynchrone et supportant TLS/HTTPS obligatoire
+- **Livrables** : Interface IEmailService, implémentation MailKitEmailService, méthode SendAsync(), support TLS
+
+**FR012 - Session 15h10 (2h) : Sécurisation des Flux et Logging**
+- **À faire** : Assainir les entrées et les traces
+- **Objectif** : Mise en place d'une validation stricte des inputs (pour éviter les injections) et configuration d'un logging structuré et sécurisé (qui ne fait pas fuiter de données sensibles)
+- **Livrables** : Validation Data Annotations, Serilog configuré, logs JSON structurés, masquage données sensibles
 
 ---
 
-### Epic 4 - Jour 4 : Tests & Docker
+### Epic 4 - Jour 4 : Garantir la Qualité (Tests) et Conteneurisation (Linux)
 
-**FR013 - Session 09h00 : Tests Unitaires (xUnit)**  
-**FR014 - Session 10h40 : Tests d'Intégration**  
-**FR015 - Session 13h30 : Cross-Platform (Linux)**  
-**FR016 - Session 15h10 : Conteneurisation (Docker)**
+**🎯 Enjeu Client** : Le filet de sécurité absolu. Pouvoir refactoriser sans crainte et déployer l'application partout (fin de la dépendance à Windows).
+
+**FR013 - Session 09h00 (1h30) : Le Filet de Sécurité (Tests Unitaires)**
+- **À faire** : Adresser le problème "Code sans Tests"
+- **Objectif** : Création du projet de tests xUnit. Rédaction des tests unitaires sur le projet Domain (moteur de validation) avec mock des interfaces. Objectif : >80% de couverture sur le métier
+- **Livrables** : Projet ValidFlow.Domain.Tests, tests sur règles de validation, couverture >80%, démonstration TDD (Red-Green-Refactor)
+
+**FR014 - Session 10h40 (1h30) : Tests d'Intégration**
+- **À faire** : Valider que l'application communique bien avec l'extérieur (sans casser la base de prod)
+- **Objectif** : Mise en place de tests d'intégration sur le Repository (via base In-Memory ou Testcontainers)
+- **Livrables** : Projet Infrastructure.Tests, tests CRUD complet, base In-Memory pour isolation, fixture xUnit
+
+**FR015 - Session 13h30 (2h30) : Préparation Multiplateforme (Vers Linux)**
+- **À faire** : Éradiquer les adhérences à Windows
+- **Objectif** : Remplacement des chemins Windows hardcodés par des chemins relatifs cross-platform (Path.Combine). Compilation de l'application en mode self-contained pour Linux
+- **Livrables** : Chemins cross-platform, compilation Linux (dotnet publish -r linux-x64), tests passent sur WSL
+
+**FR016 - Session 15h10 (2h) : Conteneurisation (Docker)**
+- **À faire** : Passer d'un déploiement manuel "Pet" à un déploiement standardisé "Cattle"
+- **Objectif** : Écriture du Dockerfile optimisé pour .NET 8. Build de l'image, passage des variables d'environnement, et exécution du batch dans un conteneur Linux local
+- **Livrables** : Dockerfile multi-stage, image Docker construite, exécution dans conteneur avec env vars, logs accessibles
 
 ---
 
-### Epic 5 - Jour 5 : CI/CD & Bilan
+### Epic 5 - Jour 5 : Déploiement CI/CD, Documentation et Bilan
 
-**FR017 - Session 09h00 : GitHub Actions CI/CD**  
-**FR018 - Session 10h40 : Revue de Code & Patterns Avancés**  
-**FR019 - Session 13h30 : Documentation (README)**  
-**FR020 - Session 15h10 : Bilan AS-IS vs TO-BE**
+**🎯 Enjeu Client** : Avoir une visibilité claire sur l'avenir, automatiser les processus laborieux et mesurer le retour sur investissement technique.
+
+**FR017 - Session 09h00 (1h30) : Automatisation (Introduction CI/CD)**
+- **À faire** : Finir l'ère du déploiement manuel risqué
+- **Objectif** : Création d'un workflow GitHub Actions basique. Automatisation de la compilation, de l'exécution des tests (le filet de sécurité) et du build de l'image Docker à chaque commit
+- **Livrables** : Fichier .github/workflows/ci.yml, workflow auto sur push, étapes build/test/docker, badge GitHub Actions dans README
+
+**FR018 - Session 10h40 (1h30) : Revue de Code Finale et Patterns Avancés**
+- **À faire** : Lisser les derniers détails architecturaux
+- **Objectif** : Session de refactoring en groupe. Application de patterns avancés si le temps le permet (ex: pattern Mediator, ou gestion avancée des exceptions globales)
+- **Livrables** : Revue 3 fichiers clés, identification code smells, refactoring appliqué, théorie Mediator et Global Exception Handler
+
+**FR019 - Session 13h30 (2h30) : Documentation de la Solution**
+- **À faire** : Rendre le projet transmissible à d'autres développeurs
+- **Objectif** : Rédaction d'un fichier README.md complet (instructions de build multiplateforme, lancement des tests, configuration des secrets locaux, commandes Docker)
+- **Livrables** : README.md avec sections prérequis, build, tests, secrets, Docker, CI/CD, diagramme architecture
+
+**FR020 - Session 15h10 (2h) : Bilan AS-IS vs TO-BE et Prochaines Étapes**
+- **À faire** : Mesurer la valeur créée pendant les 5 jours
+- **Objectif** : Présentation des métriques (Temps d'exécution des tests vs tests manuels, sécurité des secrets). Discussion d'architecture sur la scalabilité future (passage vers Kubernetes / Docker Swarm pour orchestrer les futurs batchs). Clôture de la formation
+- **Livrables** : Tableau comparatif AS-IS vs TO-BE, métriques (tests, couverture, sécurité, déploiement), discussion Kubernetes, questionnaire satisfaction
 
 ---
 
