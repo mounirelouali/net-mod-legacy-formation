@@ -718,9 +718,17 @@ Le formateur va configurer EF Core dans `ValidFlow.Infrastructure`, créer un `D
 1. **Installer EF Core packages**
    ```bash
    cd 01_Demo_Formateur/ValidFlow.Modern/ValidFlow.Infrastructure
-   dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-   dotnet add package Microsoft.EntityFrameworkCore.Design
+   dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 9.0.3
+   dotnet add package Microsoft.EntityFrameworkCore.Design --version 9.0.3
    ```
+   
+   > ⚠️ **Important - Compatibilité versions** :
+   > - .NET 8 → EF Core 8.x
+   > - .NET 9 → EF Core 9.x (nous utilisons 9.0.3)
+   > - .NET 10 → EF Core 10.x
+   >
+   > **Erreur courante** : `NU1202 - Package incompatible` = Version EF Core trop récente pour votre .NET.
+   > **Solution** : Toujours spécifier `--version X.0.X` compatible avec votre TargetFramework.
 
 2. **Ajouter référence vers Domain**
    ```bash
@@ -913,9 +921,11 @@ Le formateur va configurer EF Core dans `ValidFlow.Infrastructure`, créer un `D
 1. **Installer EF Core packages**
    ```bash
    cd 02_Atelier_Stagiaires/ValidFlow.Modern/ValidFlow.Infrastructure
-   dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-   dotnet add package Microsoft.EntityFrameworkCore.Design
+   dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 9.0.3
+   dotnet add package Microsoft.EntityFrameworkCore.Design --version 9.0.3
    ```
+   
+   > ⚠️ **Compatibilité** : .NET 9 nécessite EF Core 9.x (pas 10.x). Toujours vérifier avec `dotnet list package`.
 
 2. **Ajouter référence vers Domain**
    ```bash
@@ -968,6 +978,8 @@ Le formateur va configurer EF Core dans `ValidFlow.Infrastructure`, créer un `D
 **Si vous bloquez** :
 - **Erreur "dotnet ef not found"** : Installez `dotnet tool install --global dotnet-ef`
 - **Erreur "No DbContext found"** : Vérifiez que `AppDbContext` hérite bien de `DbContext`
+- **Erreur "NU1202 - Package incompatible"** : Version EF Core trop récente → Utilisez `--version 9.0.3`
+- **Erreur "Build failed"** : Vérifiez les versions avec `dotnet list package`, supprimez packages incompatibles
 - **Erreur connexion SQL** : Vérifiez que SQL Server LocalDB est installé (`sqllocaldb info`)
 
 **Pour aller plus loin** :
