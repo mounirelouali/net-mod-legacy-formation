@@ -51,6 +51,404 @@ Vous devriez voir : `8.x.x` (version .NET 8)
 
 ---
 
+## 🏗️ Session Configuration du Poste de Combat
+
+**Durée estimée** : 90-120 minutes (selon débit Internet)  
+**Prérequis** : Machine Windows 10/11 avec droits Administrateur
+
+> ⚠️ **IMPORTANT** : Cette section doit être complétée AVANT la session 09h00. Si vous rencontrez des blocages, contactez le formateur immédiatement.
+
+---
+
+### 📋 Vue d'Ensemble
+
+Cette session configure l'environnement technique complet pour les 5 jours de formation. Chaque étape est critique et doit être validée avant de passer à la suivante.
+
+**Ordre d'installation** : Respectez l'ordre ci-dessous (dépendances entre composants).
+
+---
+
+### Étape 1 : 🔓 Déblocage de la Politique PowerShell
+
+#### 🎯 Objectif
+Autoriser l'exécution de scripts PowerShell sur votre machine. Par défaut, Windows bloque tous les scripts pour des raisons de sécurité.
+
+#### 🛠️ Action
+```powershell
+# Ouvrir PowerShell en ADMINISTRATEUR (Windows + X → Windows PowerShell (Admin))
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Répondre **Y** (Yes) à la confirmation.
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "Access to the registry key is denied"**
+- **Cause** : PowerShell n'est pas lancé en administrateur
+- **Solution** : Fermer PowerShell et relancer avec clic droit → "Exécuter en tant qu'administrateur"
+
+**Erreur : "Set-ExecutionPolicy : Windows PowerShell updated your execution policy successfully"**
+- **Résultat** : ✅ C'est bon ! Ce n'est pas une erreur, c'est une confirmation
+
+#### ✅ Validation
+```powershell
+Get-ExecutionPolicy -Scope CurrentUser
+# Résultat attendu : RemoteSigned
+```
+
+---
+
+### Étape 2 : 🐧 Activation de WSL 2 (Windows Subsystem for Linux)
+
+#### 🎯 Objectif
+Permettre l'exécution de conteneurs Linux sur Windows (requis pour Docker et les tests cross-platform du Jour 4).
+
+#### 🛠️ Action
+```powershell
+# Dans PowerShell ADMINISTRATEUR
+wsl --install
+```
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "This operation requires WSL 2"**
+- **Solution** : 
+  ```powershell
+  wsl --set-default-version 2
+  ```
+
+**Après installation : Ubuntu se lance automatiquement**
+- Créer un username Linux : `stagiaire`
+- Créer un password simple (vous le retaperez souvent)
+
+#### ✅ Validation
+```powershell
+# APRÈS REDÉMARRAGE OBLIGATOIRE
+wsl --list --verbose
+# Résultat attendu : Ubuntu avec VERSION 2
+```
+
+> 🔴 **REDÉMARRAGE OBLIGATOIRE** après cette étape !
+
+---
+
+### Étape 3 : 🎯 Installation du Socle .NET
+
+#### 🎯 Objectif
+Installer .NET 8 SDK (compilation .NET 8) et .NET Framework 4.8 Developer Pack (compatibilité legacy).
+
+#### 🛠️ Action
+
+**3.1 - .NET 8 SDK**
+- URL : https://dotnet.microsoft.com/download/dotnet/8.0
+- Télécharger : **".NET SDK 8.0.xxx"** (Windows x64)
+- Exécuter l'installeur
+- **Fermer et rouvrir PowerShell** après installation
+
+**3.2 - .NET Framework 4.8 Developer Pack**
+- URL : https://dotnet.microsoft.com/download/dotnet-framework/net48
+- Télécharger : **"Developer Pack"**
+- Exécuter l'installeur
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "dotnet : The term 'dotnet' is not recognized"**
+- **Cause** : PowerShell ouvert AVANT l'installation
+- **Solution** : Fermer PowerShell et rouvrir une nouvelle fenêtre
+
+#### ✅ Validation
+```powershell
+dotnet --version
+# Résultat attendu : 8.0.xxx
+
+dotnet --list-sdks
+# Résultat attendu : Ligne contenant "8.0.xxx"
+```
+
+---
+
+### Étape 4 : 🌐 Installation de Google Chrome
+
+#### 🎯 Objectif
+Navigateur moderne pour tester les applications web (Jour 5 - Documentation).
+
+#### 🛠️ Action
+- URL : https://www.google.com/chrome/
+- Télécharger et installer
+- Définir comme navigateur par défaut (optionnel)
+
+#### ✅ Validation
+Lancer Chrome depuis le menu Démarrer → version affichée dans "À propos de Chrome"
+
+---
+
+### Étape 5 : 💻 Installation de Visual Studio Code + Extensions
+
+#### 🎯 Objectif
+IDE moderne pour .NET 8 avec IntelliSense, debugging et intégration Git.
+
+#### 🛠️ Action
+
+**5.1 - VS Code**
+- URL : https://code.visualstudio.com/Download
+- Télécharger : **"Windows x64 User Installer"**
+- **Important** : Cocher "Add to PATH" pendant l'installation
+
+**5.2 - Extension C# Dev Kit (CRITIQUE)**
+1. Lancer VS Code
+2. Ctrl + Shift + X (ouvrir Extensions)
+3. Chercher : **"C# Dev Kit"** (Microsoft)
+4. Cliquer **Install**
+5. **Redémarrer VS Code**
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "code : The term 'code' is not recognized"**
+- **Cause** : "Add to PATH" non coché lors de l'installation
+- **Solution** : Réinstaller VS Code en cochant l'option
+
+**Extension C# Dev Kit ne s'active pas**
+- **Solution** : Vérifier que .NET 8 SDK est installé (Étape 3)
+
+#### ✅ Validation
+```powershell
+code --version
+# Résultat attendu : Version affichée (ex: 1.88.0)
+```
+
+Dans VS Code : Vérifier que l'extension "C# Dev Kit" apparaît dans Extensions (icône verte "Installé")
+
+---
+
+### Étape 6 : 🗄️ Installation de SQL Server 2022 Express + SSMS
+
+#### 🎯 Objectif
+Base de données pour les sessions EF Core (Jour 2) et visualisation avec SQL Server Management Studio.
+
+#### 🛠️ Action
+
+**6.1 - SQL Server 2022 Express**
+- URL : https://www.microsoft.com/en-us/sql-server/sql-server-downloads
+- Cliquer **"Download now"** sous **SQL Server 2022 Express**
+- Lancer l'installeur → Choisir **"Custom"**
+- **Feature Selection** :
+  - ✅ Cocher : **"Database Engine Services"**
+  - ✅ Cocher : **"LocalDB"**
+- Instance : **Default instance** (SQLEXPRESS)
+- Authentication : **Windows Authentication Mode**
+
+**6.2 - SSMS (SQL Server Management Studio)**
+- URL : https://aka.ms/ssmsfullsetup
+- Télécharger et installer (700 Mo)
+
+#### ⚠️ Cas d'Erreur
+
+**ERREUR CRITIQUE : "Windows could not start the SQL Server (MSSQLSERVER) service on Local Computer. Error 1067: The process terminated unexpectedly."**
+
+- **Cause** : Disques SSD/NVMe récents (Lenovo, Dell) avec secteurs 4096 bytes incompatibles avec SQL Server
+- **Solution** : **PASSER À L'ÉTAPE 7 IMMÉDIATEMENT** (Fix registre SSD)
+
+**Erreur : "A network-related or instance-specific error"**
+- **Solution** : Vérifier que le service SQL Server est démarré
+  ```powershell
+  sqllocaldb start MSSQLLocalDB
+  ```
+
+#### ✅ Validation
+```powershell
+sqllocaldb info
+# Résultat attendu : MSSQLLocalDB
+
+sqllocaldb start MSSQLLocalDB
+sqllocaldb info MSSQLLocalDB
+# Résultat attendu : State: Running
+```
+
+**Test SSMS** :
+1. Lancer SSMS
+2. Server : `(localdb)\MSSQLLocalDB`
+3. Authentication : Windows Authentication
+4. Connect → ✅ Arborescence visible
+
+---
+
+### Étape 7 : 🔧 FIX CRITIQUE - Clé Registre SSD/NVMe (Lenovo/Dell)
+
+#### 🎯 Objectif
+Résoudre l'erreur 1067 de SQL Server sur les disques SSD/NVMe récents avec secteurs physiques 4096 bytes.
+
+#### 🛠️ Action
+
+**Exécuter ce script PowerShell (ADMINISTRATEUR requis)** :
+
+```powershell
+# Ouvrir PowerShell EN ADMINISTRATEUR
+$registryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\MSSQLSERVER"
+
+# Vérifier si la clé existe
+if (Test-Path $registryPath) {
+    # Créer la valeur ForcedPhysicalSectorSizeInBytes
+    New-ItemProperty -Path $registryPath -Name "ForcedPhysicalSectorSizeInBytes" -Value 512 -PropertyType DWORD -Force
+    Write-Host "✅ Clé registre ajoutée avec succès" -ForegroundColor Green
+    Write-Host "⚠️  Redémarrage du service SQL Server requis" -ForegroundColor Yellow
+    
+    # Redémarrer le service
+    Restart-Service -Name "MSSQLSERVER" -Force
+    Write-Host "✅ Service SQL Server redémarré" -ForegroundColor Green
+} else {
+    Write-Host "⚠️  SQL Server n'est pas installé ou chemin incorrect" -ForegroundColor Yellow
+}
+```
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "Cannot find path 'HKLM:\SYSTEM\CurrentControlSet\Services\MSSQLSERVER'"**
+- **Cause** : Le service est nommé différemment (instance nommée)
+- **Solution** : Utiliser `MSSQL$SQLEXPRESS` au lieu de `MSSQLSERVER`
+
+**Erreur : "Access to the registry key is denied"**
+- **Solution** : Relancer PowerShell en ADMINISTRATEUR
+
+#### ✅ Validation
+```powershell
+# Vérifier que la clé existe
+Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\MSSQLSERVER" -Name "ForcedPhysicalSectorSizeInBytes"
+# Résultat attendu : ForcedPhysicalSectorSizeInBytes : 512
+```
+
+**Test final** : Relancer SSMS et se connecter → Aucune erreur 1067
+
+---
+
+### Étape 8 : 🐳 Installation de Docker Desktop
+
+#### 🎯 Objectif
+Conteneurisation pour le Jour 4 (déploiement Linux dans un conteneur).
+
+#### 🛠️ Action
+- URL : https://www.docker.com/products/docker-desktop
+- Télécharger **"Docker Desktop for Windows"**
+- **Configuration pendant l'installation** :
+  - ✅ Cocher : **"Use WSL 2 instead of Hyper-V"**
+- Lancer Docker Desktop après installation
+- Accepter les termes du service
+
+**Configuration WSL 2 Integration** :
+1. Docker Desktop → Settings (icône engrenage)
+2. **Resources → WSL Integration**
+3. ✅ Cocher : "Enable integration with my default WSL distro"
+4. ✅ Cocher : Ubuntu
+5. Apply & Restart
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "Docker Desktop requires Windows 10 Pro/Enterprise"**
+- **Solution** : Vous avez Windows 10 Home → Installer WSL 2 d'abord (Étape 2)
+
+**Erreur : "WSL 2 installation is incomplete"**
+- **Solution** : Vérifier que WSL 2 est activé (Étape 2)
+
+**Docker daemon ne démarre pas**
+- **Cause** : Virtualisation désactivée dans le BIOS
+- **Solution** : Redémarrer → F2/DEL → Activer "Intel VT-x" ou "AMD-V"
+
+#### ✅ Validation
+```powershell
+docker --version
+# Résultat attendu : Docker version 24.x.x
+
+docker run hello-world
+# Résultat attendu : "Hello from Docker!"
+```
+
+> 🔴 **REDÉMARRAGE** peut être requis après Docker Desktop
+
+---
+
+### Étape 9 : 📁 Création de C:\dev et Clone du Repository
+
+#### 🎯 Objectif
+Créer le dossier de travail et récupérer le code du projet de formation.
+
+#### 🛠️ Action
+```powershell
+# Créer le dossier de développement
+New-Item -ItemType Directory -Path "C:\dev" -Force
+
+# Se placer dans le dossier
+cd C:\dev
+
+# Cloner le repository (doit être PUBLIC)
+git clone https://github.com/mounirelouali/net-mod-legacy-formation.git
+
+# Entrer dans le projet
+cd net-mod-legacy-formation
+
+# Ouvrir VS Code
+code .
+```
+
+#### ⚠️ Cas d'Erreur
+
+**Erreur : "Repository not found"**
+- **Cause** : Le repository est PRIVÉ ou l'URL est incorrecte
+- **Solution** : 
+  1. Vérifier que le repo est PUBLIC sur GitHub
+  2. Vérifier l'URL exacte (copier-coller depuis GitHub)
+
+**Erreur : "git : The term 'git' is not recognized"**
+- **Solution** : Installer Git (https://git-scm.com/download/win)
+
+#### ✅ Validation
+```powershell
+# Vérifier la structure du projet
+dir
+# Résultat attendu : Dossiers visibles (02_Atelier_Stagiaires, 03_Support_Quotidien, etc.)
+```
+
+VS Code s'ouvre avec le projet → Extension C# Dev Kit détecte automatiquement les fichiers .NET
+
+---
+
+## 📊 Récapitulatif de Configuration
+
+| Étape | Composant | Critique | Redémarrage Requis |
+|-------|-----------|----------|-------------------|
+| 1 | PowerShell Policy | 🔴 OUI | ❌ Non |
+| 2 | WSL 2 | 🟠 Jour 4 | ✅ **OUI** |
+| 3 | .NET 8 SDK | 🔴 OUI | ❌ Non |
+| 4 | Chrome | 🟢 Jour 5 | ❌ Non |
+| 5 | VS Code + C# Dev Kit | 🔴 OUI | ❌ Non |
+| 6 | SQL Server + SSMS | 🔴 OUI | ❌ Non |
+| 7 | Fix SSD (Registre) | 🔴 Si erreur 1067 | ❌ Non (service restart) |
+| 8 | Docker Desktop | 🟠 Jour 4 | ✅ Possible |
+| 9 | Clone Repo | 🔴 OUI | ❌ Non |
+
+**Durée totale** : 90-120 minutes
+
+---
+
+## 🚀 Script Automatisé (Optionnel)
+
+Pour les utilisateurs avancés, un script PowerShell automatisé est disponible :
+
+📂 `03_Support_Quotidien/Scripts/J1_S0_Master_Install_Script.ps1`
+
+**Utilisation** :
+```powershell
+# Lancer PowerShell en ADMINISTRATEUR
+cd C:\dev\net-mod-legacy-formation\03_Support_Quotidien\Scripts
+.\J1_S0_Master_Install_Script.ps1
+```
+
+> ⚠️ Le script télécharge et installe automatiquement tous les composants. Durée : 60-90 min selon débit Internet.
+
+---
+
+**Vous êtes maintenant prêt pour la session 09h00 !**
+
+---
+
 ## Session 1 - 09h00 : Analyse du Batch Legacy
 
 ### 📢 Ouverture de Session
@@ -429,8 +827,22 @@ Le formateur va créer les 5 projets .NET 8 en direct devant vous. Observez bien
 6. **Création de la solution globale**
    ```bash
    dotnet new sln -n ValidFlow.Modern
-   dotnet sln add **/*.csproj
    ```
+   
+   **Ajouter les projets (PowerShell)** :
+   ```powershell
+   Get-ChildItem -Recurse -Filter "*.csproj" | ForEach-Object { dotnet sln add $_.FullName }
+   ```
+   
+   **Ou en commande explicite** :
+   ```bash
+   dotnet sln add ValidFlow.Domain/ValidFlow.Domain.csproj
+   dotnet sln add ValidFlow.Tests/ValidFlow.Tests.csproj
+   dotnet sln add ValidFlow.Application/ValidFlow.Application.csproj
+   dotnet sln add ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+   dotnet sln add ValidFlow.Console/ValidFlow.Console.csproj
+   ```
+   
    **Ce que vous voyez** : Tous les projets sont ajoutés à la solution
 
 7. **Configuration des références entre projets**
@@ -520,15 +932,20 @@ Le formateur va créer les 5 projets .NET 8 en direct devant vous. Observez bien
 3. **Créer la solution** :
    ```bash
    dotnet new sln -n ValidFlow.Modern
-   dotnet sln add **/*.csproj
    ```
-
-   Si la dernière commande ne marche pas, utilise plutôt.:
-  ```bash
-    # Fonctionne sur Windows PowerShell ET sur Linux/macOS (PowerShell Core)
-    $projects = Get-ChildItem -Recurse -Filter *.csproj | Select-Object -ExpandProperty FullName
-    dotnet sln add $projects
-
+   
+   **Ajouter les projets (PowerShell)** :
+   ```powershell
+   Get-ChildItem -Recurse -Filter "*.csproj" | ForEach-Object { dotnet sln add $_.FullName }
+   ```
+   
+   **Ou commande explicite** :
+   ```bash
+   dotnet sln add ValidFlow.Domain/ValidFlow.Domain.csproj
+   dotnet sln add ValidFlow.Tests/ValidFlow.Tests.csproj
+   dotnet sln add ValidFlow.Application/ValidFlow.Application.csproj
+   dotnet sln add ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+   dotnet sln add ValidFlow.Console/ValidFlow.Console.csproj
    ```
    
 
