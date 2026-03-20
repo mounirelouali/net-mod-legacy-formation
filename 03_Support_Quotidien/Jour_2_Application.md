@@ -870,6 +870,72 @@ sqlcmd -S (localdb)\mssqllocaldb -d ValidFlowDb -Q "SELECT * FROM Clients"
 
 > 💡 **Astuce** : Azure Data Studio est plus léger que SSMS et suffisant pour la formation.
 
+**Méthode 5 : Visual Studio Code - Extension SQL Server (mssql)** ⭐ **Recommandé pour VS Code**
+
+1. **Installer l'extension SQL Server (mssql)**
+   - Ouvrez **Extensions** dans VS Code (Ctrl+Shift+X)
+   - Recherchez : `SQL Server (mssql)`
+   - Éditeur : **Microsoft**
+   - Cliquez sur **Installer**
+   - ⭐ **+10 millions de téléchargements** - Extension la plus populaire pour SQL Server
+
+2. **Se connecter à LocalDB**
+   - Ouvrez la **palette de commandes** (Ctrl+Shift+P ou F1)
+   - Tapez : `MS SQL: Connect`
+   - **Server name** : `(localdb)\mssqllocaldb`
+   - **Database name** : `ValidFlowDb` (ou laisser vide pour voir toutes les bases)
+   - **Authentication Type** : `Integrated` (Windows Authentication)
+   - **Save Password** : `Yes`
+   - **Profile Name** : `LocalDB - ValidFlow` (optionnel)
+
+3. **Visualiser les tables et données**
+   - Cliquez sur l'icône **SQL Server** dans la barre latérale gauche
+   - Développez : **LocalDB - ValidFlow** → **Databases** → **ValidFlowDb** → **Tables** → **dbo.Clients**
+   - **Clic droit** sur `dbo.Clients` → **Select Top 1000**
+   - Une nouvelle fenêtre s'ouvre avec les résultats
+
+4. **Exécuter des requêtes SQL**
+   - Créez un nouveau fichier `.sql` (Ctrl+N, sauvegarder avec extension `.sql`)
+   - Connectez-vous à LocalDB (icône en bas à droite ou Ctrl+Shift+P → `MS SQL: Connect`)
+   - Tapez votre requête :
+     ```sql
+     SELECT * FROM Clients;
+     ```
+   - **Exécuter** : Ctrl+Shift+E ou clic droit → **Execute Query**
+
+5. **Opérations CRUD directement depuis VS Code**
+   
+   **CREATE (Insérer un client)** :
+   ```sql
+   INSERT INTO Clients (Name, Email)
+   VALUES ('Bob Martin', 'bob@example.com');
+   ```
+   
+   **READ (Lire tous les clients)** :
+   ```sql
+   SELECT Id, Name, Email FROM Clients;
+   ```
+   
+   **UPDATE (Modifier un client)** :
+   ```sql
+   UPDATE Clients
+   SET Email = 'bob.martin@example.com'
+   WHERE Name = 'Bob Martin';
+   ```
+   
+   **DELETE (Supprimer un client)** :
+   ```sql
+   DELETE FROM Clients WHERE Name = 'Bob Martin';
+   ```
+
+> 💡 **Avantages VS Code + mssql** :
+> - ✅ Pas besoin de quitter VS Code
+> - ✅ IntelliSense SQL (auto-complétion)
+> - ✅ Snippets SQL (sqlCreateTable, sqlSelect, etc.)
+> - ✅ Visualisation des résultats en grille
+> - ✅ Export des résultats en JSON/CSV/Excel
+> - ✅ Historique des requêtes
+
 #### 🚨 Dépannage : "Je ne trouve pas la base ValidFlowDb"
 
 **Problème** : La base `ValidFlowDb` n'apparaît pas dans SSMS ou Visual Studio.
