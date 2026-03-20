@@ -2256,11 +2256,126 @@ Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration:
 **Si vous bloquez** :
 - **Erreur "No executable found matching command dotnet-ef"** : Installez `dotnet tool install --global dotnet-ef`
 - **Erreur "No DbContext found"** : Vérifiez le `--startup-project` (doit pointer vers un projet exécutable)
-- **Erreur "Build failed" lors de `dotnet ef migrations add`** :
-  - **Cause** : Le projet Console ne référence pas Infrastructure
-  - **Solution** : `cd ValidFlow.Console` puis `dotnet add reference ../ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj`
-  - **Vérification** : `dotnet build` dans Console doit compiler sans erreur
+- **Erreur "Build failed" lors de `dotnet ef migrations add`** : Voir documentation détaillée ci-dessous ⬇️
 - **Tests échouent** : Vérifiez que chaque test utilise un `databaseName` UNIQUE (sinon collision)
+
+---
+
+### 📋 Documentation : `dotnet ef migrations add` - Build failed
+
+#### ⚠️ Pourquoi ce message est trompeur
+
+```bash
+dotnet ef migrations add AddPhoneToClient --startup-project ../ValidFlow.Console
+Build started...
+Build failed. Use dotnet build to see the errors.
+```
+
+`dotnet ef` dit **"Build failed"** sans détails. Il faut **toujours diagnostiquer en buildant explicitement le startup-project** :
+
+```powershell
+# Diagnostic : builder le startup-project séparément
+cd ValidFlow.Console
+dotnet build
+```
+
+---
+
+#### 🔍 Cause 1 : Projet Console ne référence pas Infrastructure
+
+**Symptôme** : `dotnet ef` ne trouve pas le DbContext.
+
+**Solution** :
+```powershell
+cd ValidFlow.Console
+dotnet add reference ../ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+dotnet build  # Vérifier que ça compile
+```
+
+---
+
+#### 🔍 Cause 2 : Modification du record `Client` casse les instanciations existantes
+
+**Symptôme** : Erreur de compilation `CS7036` après ajout d'un paramètre au record.
+
+**Contexte** : Vous avez modifié `Client.cs` pour ajouter `Phone` :
+
+```csharp
+// ❌ AVANT (record avec 3 paramètres)
+public record Client(int Id, string Name, string Email);
+
+// ✅ APRÈS (record avec 4 paramètres)
+public record Client(int Id, string Name, string Email, string? Phone);
+```
+
+**Erreur compilateur** :
+```
+error CS7036: Parmi les arguments spécifiés, aucun ne correspond
+au paramètre obligatoire 'Phone' de 'Client.Client(int, string, string, string?)'
+```
+
+**Cause racine** : Les **records C# 12** ont des constructeurs primaires — chaque paramètre est **obligatoire**, même s'il est nullable (`string?`).
+
+**Solution** : Mettre à jour **toutes les instanciations** de `Client` dans `Program.cs`, tests, etc. :
+
+```csharp
+// ❌ Avant (3 arguments)
+var client1 = new Client(1, "John Doe", "john@example.com");
+
+// ✅ Après (4 arguments, null pour Phone)
+var client1 = new Client(1, "John Doe", "john@example.com", null);
+```
+
+**Alternative** : Rendre `Phone` vraiment optionnel à l'appel avec valeur par défaut :
+
+```csharp
+// Phone devient optionnel grâce à la valeur par défaut
+public record Client(int Id, string Name, string Email, string? Phone = null);
+```
+
+---
+
+#### 📊 Règle à retenir : l'immutabilité des records
+
+| Type | Paramètre nullable | Appel possible sans lui ? |
+|------|-------------------|--------------------------|
+| `class` | Oui (valeur par défaut possible) | ✅ Oui |
+| `record` | Non (sauf valeur par défaut explicite) | ❌ Non |
+
+---
+
+#### ✅ Étapes complètes de correction
+
+```powershell
+# 1. Diagnostiquer l'erreur réelle (NE PAS se fier au message de dotnet ef)
+cd ValidFlow.Console
+dotnet build
+
+# 2. Corriger toutes les instanciations dans Program.cs, tests, etc.
+# (ajouter null comme 4ème argument, ou valeur par défaut dans le record)
+
+# 3. Vérifier que le build passe
+dotnet build
+
+# 4. Relancer la migration
+cd ../ValidFlow.Infrastructure
+dotnet ef migrations add AddPhoneToClient --startup-project ../ValidFlow.Console
+```
+
+---
+
+#### 🎯 Point pédagogique clé
+
+> Modifier un **record** (ou toute signature de constructeur) a un **impact immédiat sur tous les consommateurs** de cette classe. En architecture en couches, cela peut casser des projets distants (`Console`, `Tests`) qui ne compilent pas dans le contexte du projet modifié.
+>
+> **Réflexe** : après toute modification d'entité Domain, builder **la solution entière** avant de relancer les outils EF.
+
+```powershell
+# Bonne pratique : toujours vérifier l'ensemble de la solution
+dotnet build ValidFlow.Modern.sln
+```
+
+---
 
 **Pour aller plus loin** :
 - Créez une migration qui renomme `Email` en `EmailAddress` (`RenameColumn`)
