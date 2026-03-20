@@ -1178,3 +1178,575 @@ Vous avez configuré Entity Framework Core 8 :
 **Prochaine session** : Repository Pattern pour isoler l'accès données et rendre le code testable.
 
 ---
+
+# Session 3 (13h30) - Le Repository Pattern
+
+> **Durée** : 2h30  
+> **Objectif** : Séparer la logique métier de l'accès données pour rendre le code testable avec une base In-Memory
+
+---
+
+## 🧠 Concepts Théoriques
+
+### Qu'est-ce que le Repository Pattern ?
+
+**Définition** : Le Repository Pattern est une **couche d'abstraction** entre la logique métier et l'accès aux données. Il encapsule toutes les opérations de persistance (CRUD) derrière une interface.
+
+**Problème résolu** : Sans Repository, votre logique métier dépend **directement** de EF Core et du DbContext → impossible de tester sans base de données réelle.
+
+---
+
+### 🔴 Exemple AVANT (Sans Repository - Couplage fort)
+
+**Fichier Application** : `ValidFlow.Application/ClientService.cs`
+
+```csharp
+using ValidFlow.Infrastructure.Data;
+
+public class ClientService
+{
+    private readonly AppDbContext _db; // ❌ Dépendance directe vers EF Core
+    
+    public ClientService(AppDbContext db)
+    {
+        _db = db;
+    }
+    
+    public bool ValidateAndSaveClient(string name, string email)
+    {
+        // Logique métier (validation)
+        if (string.IsNullOrEmpty(name) || name.Length < 2)
+            return false;
+        
+        // Accès données (directement dans la logique métier)
+        var client = new Client(0, name, email);
+        _db.Clients.Add(client); // ❌ EF Core dans la logique métier
+        _db.SaveChanges();
+        
+        return true;
+    }
+    
+    public List<Client> GetAllClients()
+    {
+        return _db.Clients.ToList(); // ❌ Requête EF Core dans la logique métier
+    }
+}
+```
+
+**Problèmes** :
+1. ❌ **Couplage fort** : Logique métier dépend de EF Core (impossible de changer d'ORM)
+2. ❌ **Tests impossibles** : Pour tester `ValidateAndSaveClient`, il faut une vraie base SQL
+3. ❌ **Violation du principe SOLID** : Single Responsibility (mélange validation + persistance)
+
+**Métaphore (humour qui tue)** :
+> Ton chef cuisinier (logique métier) va **directement au supermarché** (base de données) acheter les ingrédients. 🛒
+>
+> Résultat : Si le supermarché change d'adresse ou ferme, le chef ne sait plus cuisiner. 😅
+
+---
+
+### 🟢 Exemple APRÈS (Avec Repository - Couplage faible)
+
+**Fichier Interface** : `ValidFlow.Domain/Interfaces/IClientRepository.cs`
+
+```csharp
+namespace ValidFlow.Domain.Interfaces;
+
+public interface IClientRepository
+{
+    void Add(Client client);
+    Client? GetById(int id);
+    List<Client> GetAll();
+    void Update(Client client);
+    void Delete(int id);
+    void SaveChanges();
+}
+```
+
+**Fichier Implémentation** : `ValidFlow.Infrastructure/Repositories/ClientRepository.cs`
+
+```csharp
+using ValidFlow.Domain.Entities;
+using ValidFlow.Domain.Interfaces;
+using ValidFlow.Infrastructure.Data;
+
+namespace ValidFlow.Infrastructure.Repositories;
+
+public class ClientRepository : IClientRepository
+{
+    private readonly AppDbContext _db;
+    
+    public ClientRepository(AppDbContext db)
+    {
+        _db = db;
+    }
+    
+    public void Add(Client client) => _db.Clients.Add(client);
+    
+    public Client? GetById(int id) => _db.Clients.FirstOrDefault(c => c.Id == id);
+    
+    public List<Client> GetAll() => _db.Clients.ToList();
+    
+    public void Update(Client client)
+    {
+        var existing = _db.Clients.FirstOrDefault(c => c.Id == client.Id);
+        if (existing != null)
+        {
+            _db.Clients.Remove(existing);
+            _db.Clients.Add(client);
+        }
+    }
+    
+    public void Delete(int id)
+    {
+        var client = _db.Clients.FirstOrDefault(c => c.Id == id);
+        if (client != null)
+            _db.Clients.Remove(client);
+    }
+    
+    public void SaveChanges() => _db.SaveChanges();
+}
+```
+
+**Fichier Application (refactoré)** : `ValidFlow.Application/ClientService.cs`
+
+```csharp
+using ValidFlow.Domain.Interfaces;
+
+public class ClientService
+{
+    private readonly IClientRepository _repository; // ✅ Dépendance vers l'interface
+    
+    public ClientService(IClientRepository repository)
+    {
+        _repository = repository;
+    }
+    
+    public bool ValidateAndSaveClient(string name, string email)
+    {
+        // Logique métier (validation)
+        if (string.IsNullOrEmpty(name) || name.Length < 2)
+            return false;
+        
+        // Persistance via Repository (abstraction)
+        var client = new Client(0, name, email);
+        _repository.Add(client); // ✅ Interface, pas EF Core
+        _repository.SaveChanges();
+        
+        return true;
+    }
+    
+    public List<Client> GetAllClients()
+    {
+        return _repository.GetAll(); // ✅ Interface, pas DbContext
+    }
+}
+```
+
+**Avantages** :
+1. ✅ **Couplage faible** : Logique métier dépend de `IClientRepository` (interface), pas de EF Core
+2. ✅ **Testabilité** : On peut créer un `FakeClientRepository` pour les tests (sans base SQL)
+3. ✅ **SOLID** : Chaque classe a une seule responsabilité
+4. ✅ **Flexibilité** : On peut changer d'ORM (Dapper, ADO.NET) sans toucher à la logique métier
+
+**Métaphore (out-of-the-box)** :
+> Le chef cuisinier (logique métier) demande au **livreur** (Repository) d'aller chercher les ingrédients. 🚚
+>
+> Le livreur va au supermarché (base de données). Si le supermarché change, **seul le livreur change**, pas le chef ! 🍕
+
+---
+
+### 📊 Diagramme : Architecture en couches avec Repository
+
+```mermaid
+graph TD
+    UI["🎨 UI Layer<br/>(Console, Web API)"] --> App["🧠 Application Layer<br/>(ClientService)"];
+    App --> IRepo["📋 IClientRepository<br/>(Interface - Domain)"];
+    IRepo -."Implémenté par".-> Repo["💾 ClientRepository<br/>(Infrastructure)"];
+    Repo --> EF["⚙️ AppDbContext<br/>(EF Core)"];
+    EF --> DB[("🗄️ Database<br/>(SQL Server)")];
+    
+    style UI fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style App fill:#d4edda,stroke:#28a745,stroke-width:2px
+    style IRepo fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    style Repo fill:#f8d7da,stroke:#dc3545,stroke-width:2px
+    style EF fill:#d1ecf1,stroke:#17a2b8,stroke-width:2px
+    style DB fill:#e2e3e5,stroke:#6c757d,stroke-width:2px
+```
+
+**Flux** :
+1. **UI** appelle `ClientService.ValidateAndSaveClient()`
+2. **Application Layer** valide les données (logique métier)
+3. **Application Layer** appelle `IClientRepository.Add()`
+4. **Infrastructure Layer** (`ClientRepository`) utilise EF Core pour persister
+5. **EF Core** génère le SQL et l'exécute
+
+**Inversion de dépendance** : `ClientService` dépend de `IClientRepository` (interface dans Domain), pas de `ClientRepository` (implémentation dans Infrastructure). C'est le **D** de SOLID !
+
+---
+
+## 💬 Analyse Collective
+
+**Question à réfléchir** :
+
+> "Sans Repository Pattern, comment testez-vous que la validation `name.Length < 2` fonctionne correctement ?"
+
+**Prenez 5-8 secondes pour réfléchir avant de répondre.**
+
+**Réponse attendue (Sans Repository)** :
+```csharp
+[Test]
+public void ValidateClient_NameTooShort_ReturnsFalse()
+{
+    // Problème : Il faut un vrai AppDbContext
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+        .UseSqlServer("Server=(localdb)\\mssqllocaldb;..."); // ❌ Vraie base SQL
+    var db = new AppDbContext(options);
+    
+    var service = new ClientService(db);
+    var result = service.ValidateAndSaveClient("A", "a@example.com");
+    
+    Assert.False(result); // Test lent (base SQL) et fragile
+}
+```
+
+**Problème** : Test **lent** (base SQL), **fragile** (dépend de la config DB), **complexe** (setup DbContext).
+
+**Réponse attendue (Avec Repository)** :
+```csharp
+[Test]
+public void ValidateClient_NameTooShort_ReturnsFalse()
+{
+    // Fake Repository (en mémoire, pas de SQL)
+    var fakeRepo = new FakeClientRepository();
+    var service = new ClientService(fakeRepo);
+    
+    var result = service.ValidateAndSaveClient("A", "a@example.com");
+    
+    Assert.False(result); // Test rapide, fiable, simple
+}
+
+public class FakeClientRepository : IClientRepository
+{
+    private List<Client> _clients = new();
+    public void Add(Client client) => _clients.Add(client);
+    public List<Client> GetAll() => _clients;
+    // ... autres méthodes
+}
+```
+
+**Avantage** : Test **instantané** (mémoire), **fiable** (pas de dépendance externe), **simple** (pas de setup DB).
+
+---
+
+## 👨‍💻 Démonstration Live
+
+**🎯 Ce que vous allez voir** :
+
+Le formateur va créer `IClientRepository`, implémenter `ClientRepository` avec EF Core, et l'injecter dans `ClientService`.
+
+**📂 Répertoire de Travail Formateur** : `01_Demo_Formateur/ValidFlow.Modern/`
+
+**Étapes** :
+
+1. **Créer l'interface IClientRepository dans Domain**
+   
+   **Fichier** : `ValidFlow.Domain/Interfaces/IClientRepository.cs`
+   ```csharp
+   namespace ValidFlow.Domain.Interfaces;
+   
+   public interface IClientRepository
+   {
+       void Add(Client client);
+       Client? GetById(int id);
+       List<Client> GetAll();
+       void Update(Client client);
+       void Delete(int id);
+       void SaveChanges();
+   }
+   ```
+
+2. **Créer ClientRepository dans Infrastructure**
+   
+   **Fichier** : `ValidFlow.Infrastructure/Repositories/ClientRepository.cs`
+   ```csharp
+   using ValidFlow.Domain.Entities;
+   using ValidFlow.Domain.Interfaces;
+   using ValidFlow.Infrastructure.Data;
+   
+   namespace ValidFlow.Infrastructure.Repositories;
+   
+   public class ClientRepository : IClientRepository
+   {
+       private readonly AppDbContext _db;
+       
+       public ClientRepository(AppDbContext db)
+       {
+           _db = db;
+       }
+       
+       public void Add(Client client)
+       {
+           _db.Clients.Add(client);
+       }
+       
+       public Client? GetById(int id)
+       {
+           return _db.Clients.FirstOrDefault(c => c.Id == id);
+       }
+       
+       public List<Client> GetAll()
+       {
+           return _db.Clients.ToList();
+       }
+       
+       public void Update(Client client)
+       {
+           var existing = _db.Clients.FirstOrDefault(c => c.Id == client.Id);
+           if (existing != null)
+           {
+               _db.Clients.Remove(existing);
+               _db.Clients.Add(client);
+           }
+       }
+       
+       public void Delete(int id)
+       {
+           var client = _db.Clients.FirstOrDefault(c => c.Id == id);
+           if (client != null)
+               _db.Clients.Remove(client);
+       }
+       
+       public void SaveChanges()
+       {
+           _db.SaveChanges();
+       }
+   }
+   ```
+
+3. **Créer ValidFlow.Application (nouveau projet)**
+   
+   ```bash
+   cd 01_Demo_Formateur/ValidFlow.Modern
+   dotnet new classlib -n ValidFlow.Application
+   cd ValidFlow.Application
+   dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
+   ```
+
+4. **Créer ClientService dans Application**
+   
+   **Fichier** : `ValidFlow.Application/Services/ClientService.cs`
+   ```csharp
+   using ValidFlow.Domain.Entities;
+   using ValidFlow.Domain.Interfaces;
+   
+   namespace ValidFlow.Application.Services;
+   
+   public class ClientService
+   {
+       private readonly IClientRepository _repository;
+       
+       public ClientService(IClientRepository repository)
+       {
+           _repository = repository;
+       }
+       
+       public bool CreateClient(string name, string email)
+       {
+           // Validation métier
+           if (string.IsNullOrWhiteSpace(name) || name.Length < 2)
+               return false;
+           
+           if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+               return false;
+           
+           // Persistance via Repository
+           var client = new Client(0, name, email);
+           _repository.Add(client);
+           _repository.SaveChanges();
+           
+           return true;
+       }
+       
+       public List<Client> GetAllClients()
+       {
+           return _repository.GetAll();
+       }
+       
+       public Client? GetClientById(int id)
+       {
+           return _repository.GetById(id);
+       }
+   }
+   ```
+
+5. **Configurer l'injection de dépendances (Console App)**
+   
+   **Fichier** : `ValidFlow.Console/Program.cs`
+   ```csharp
+   using Microsoft.Extensions.DependencyInjection;
+   using Microsoft.Extensions.Hosting;
+   using ValidFlow.Application.Services;
+   using ValidFlow.Domain.Interfaces;
+   using ValidFlow.Infrastructure.Data;
+   using ValidFlow.Infrastructure.Repositories;
+   
+   var builder = Host.CreateDefaultBuilder(args);
+   
+   builder.ConfigureServices(services =>
+   {
+       // Enregistrer DbContext
+       services.AddDbContext<AppDbContext>();
+       
+       // Enregistrer Repository (Interface → Implémentation)
+       services.AddScoped<IClientRepository, ClientRepository>();
+       
+       // Enregistrer Service métier
+       services.AddScoped<ClientService>();
+   });
+   
+   var host = builder.Build();
+   
+   // Tester le Repository Pattern
+   using var scope = host.Services.CreateScope();
+   var clientService = scope.ServiceProvider.GetRequiredService<ClientService>();
+   
+   Console.WriteLine("=== Test Repository Pattern ===");
+   Console.WriteLine();
+   
+   // CREATE
+   var success = clientService.CreateClient("Charlie Brown", "charlie@example.com");
+   Console.WriteLine($"✅ Client créé : {success}");
+   
+   // READ
+   var clients = clientService.GetAllClients();
+   Console.WriteLine($"\n📋 {clients.Count} client(s) en base :");
+   foreach (var c in clients)
+   {
+       Console.WriteLine($"   - [{c.Id}] {c.Name} ({c.Email})");
+   }
+   ```
+   
+   **Exécution** :
+   ```bash
+   dotnet run
+   ```
+   
+   **Résultat** :
+   ```
+   === Test Repository Pattern ===
+   
+   ✅ Client créé : True
+   
+   📋 1 client(s) en base :
+      - [1] Charlie Brown (charlie@example.com)
+   ```
+
+6. **Expliquer l'injection de dépendances**
+   
+   **💬 Message formateur** :
+   > "Vous voyez ? `ClientService` ne sait PAS qu'il utilise EF Core. Il utilise juste `IClientRepository`. Demain, si je veux remplacer EF Core par Dapper, je change **1 seule ligne** dans `Program.cs` :"
+   >
+   > ```csharp
+   > // services.AddScoped<IClientRepository, ClientRepository>(); // EF Core
+   > services.AddScoped<IClientRepository, DapperClientRepository>(); // Dapper
+   > ```
+   >
+   > **Logique métier inchangée** ! C'est ça, l'inversion de dépendance. 🎯
+
+---
+
+**💬 Message** :
+> "Vous venez de voir le Repository Pattern en action. Maintenant, c'est à vous de créer votre Repository et de l'injecter dans un service métier. 40 minutes. Go !"
+
+---
+
+## ⚙️ Défi d'Application
+
+**Mission** : Créer `IClientRepository`, l'implémenter avec EF Core, et l'utiliser dans `ClientService`.
+
+**📂 Répertoire de Travail Stagiaires** : `02_Atelier_Stagiaires/ValidFlow.Modern/`
+
+**⏱️ Durée** : 40 minutes
+
+---
+
+**Étapes** :
+
+1. **Créer IClientRepository dans Domain/Interfaces**
+   - Méthodes : `Add`, `GetById`, `GetAll`, `Update`, `Delete`, `SaveChanges`
+
+2. **Créer ClientRepository dans Infrastructure/Repositories**
+   - Implémenter `IClientRepository`
+   - Utiliser `AppDbContext` pour les opérations EF Core
+
+3. **Créer le projet Application**
+   ```bash
+   dotnet new classlib -n ValidFlow.Application
+   dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
+   ```
+
+4. **Créer ClientService dans Application/Services**
+   - Injecter `IClientRepository` via constructeur
+   - Méthode `CreateClient(name, email)` avec validation
+   - Méthode `GetAllClients()`
+
+5. **Configurer DI dans Console/Program.cs**
+   - Enregistrer `AppDbContext`
+   - Enregistrer `IClientRepository → ClientRepository`
+   - Enregistrer `ClientService`
+
+6. **Tester**
+   ```bash
+   dotnet run
+   ```
+
+**Critères de Succès** :
+- [ ] `IClientRepository` créé dans Domain/Interfaces
+- [ ] `ClientRepository` implémente `IClientRepository` avec EF Core
+- [ ] `ClientService` injecte `IClientRepository` (pas `AppDbContext`)
+- [ ] DI configuré dans Program.cs
+- [ ] `dotnet run` affiche les clients créés
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Pour démarrer** :
+- **Repository Pattern** : Couche d'abstraction entre logique métier et accès données
+- **Interface** : Contrat que l'implémentation doit respecter
+- **Injection de dépendances** : Le conteneur IoC fournit l'implémentation concrète
+- **SOLID - D** : Dependency Inversion Principle (dépendre d'abstractions, pas d'implémentations)
+
+**Si vous bloquez** :
+- **Erreur "No service for type IClientRepository"** : Avez-vous enregistré le Repository dans `ConfigureServices` ?
+- **Erreur "Circular dependency"** : Vérifiez que Repository n'injecte pas Service et vice-versa
+- **Logique métier dans Repository** : Repository = accès données uniquement (pas de validation)
+
+**Pour aller plus loin** :
+- Créez un `FakeClientRepository` (liste en mémoire) pour tester `ClientService`
+- Ajoutez une méthode `GetByEmail(string email)` dans le Repository
+- Utilisez un pattern Unit of Work pour gérer plusieurs Repositories
+
+---
+
+### 🔗 Documentation Officielle
+
+- [Repository Pattern](https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/infrastructure-persistence-layer-design)
+- [Dependency Injection in .NET](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection)
+- [SOLID Principles](https://learn.microsoft.com/en-us/dotnet/architecture/modern-web-apps-azure/architectural-principles)
+
+---
+
+**🎯 Résumé Session 3**
+
+Vous avez implémenté le Repository Pattern :
+- ✅ Compris le couplage fort vs couplage faible
+- ✅ Créé `IClientRepository` dans Domain (interface)
+- ✅ Implémenté `ClientRepository` dans Infrastructure (EF Core)
+- ✅ Injecté le Repository dans `ClientService` (Application Layer)
+- ✅ Configuré l'injection de dépendances
+
+**Prochaine session** : Migrations EF Core et gestion de l'évolution du schéma de base de données.
+
+---
