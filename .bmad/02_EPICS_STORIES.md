@@ -496,13 +496,107 @@ Chaque Story suit le format :
 
 ## Epic 3 - Jour 3 : Sécuriser la Configuration et les Services
 
+**🎯 Enjeu Client** : Éliminer le risque de fuite de données. Obtenir la capacité d'écrire du code sécurisé et professionnel.
+
 **Stories** : FR009 (Externalisation Config), FR010 (Secrets), FR011 (MailKit), FR012 (Logging)
 
 **Priorité** : **SHOULD** (V2)
 
 ---
 
+### Story FR009 - Session 1 (09h00) : Externalisation de la Configuration
+
+**À faire** : Supprimer toutes les données en dur dans le code (chemins, paramètres).
+
+**Objectif** : Migrer de `ConfigurationManager.AppSettings` (XML) vers `appsettings.json` avec le pattern IOptions.
+
+**Acceptance Criteria** :
+- ✅ Fichiers `appsettings.json` et `appsettings.Development.json` créés
+- ✅ Classes Options (POCO) définies pour chaque section de config
+- ✅ Configuration enregistrée dans DI via `services.Configure<T>()`
+- ✅ Service injecte `IOptions<T>` au lieu d'accès statique
+- ✅ Démonstration : Migration d'un paramètre hardcodé vers appsettings
+- ✅ Exercice : Externaliser 3 paramètres hardcodés dans ValidFlow
+
+**Dépendances** : FR005 (Dependency Injection)
+
+**Effort** : 1h30
+
+**Priorité** : SHOULD (V2)
+
+---
+
+### Story FR010 - Session 2 (10h40) : Gestion des Secrets (Secure Coding)
+
+**À faire** : Traiter les credentials (mots de passe SQL, identifiants SMTP) hardcodés.
+
+**Objectif** : Mettre en place .NET Secret Manager pour le développement et théoriser Azure Key Vault pour la production.
+
+**Acceptance Criteria** :
+- ✅ `.NET Secret Manager` initialisé (`dotnet user-secrets init`)
+- ✅ Secrets (mot de passe DB, SMTP) stockés hors Git
+- ✅ Service lit secrets via `IOptions<T>` (même pattern que FR009)
+- ✅ Théorie : Variables d'environnement en production
+- ✅ Théorie : Azure Key Vault (présentation sans implémentation)
+- ✅ Démonstration : Lecture secret SMTP depuis User Secrets
+- ✅ Exercice : Sécuriser mot de passe DB avec Secret Manager
+
+**Dépendances** : FR009 (Externalisation Config)
+
+**Effort** : 1h30
+
+**Priorité** : SHOULD (V2)
+
+---
+
+### Story FR011 - Session 3 (13h30) : Modernisation des Services Externes (E-mail)
+
+**À faire** : Remplacer le vieux client SMTP obsolète et non sécurisé.
+
+**Objectif** : Intégrer MailKit pour un service d'envoi d'emails découplé, asynchrone et sécurisé (TLS/HTTPS).
+
+**Acceptance Criteria** :
+- ✅ Package `MailKit` installé
+- ✅ Interface `IEmailService` définie
+- ✅ Implémentation `MailKitEmailService` avec support TLS
+- ✅ Configuration email lue depuis `IOptions<EmailOptions>`
+- ✅ Méthode `SendAsync()` asynchrone
+- ✅ Démonstration : Envoi email de test avec MailKit
+- ✅ Exercice : Créer service de notification email pour ValidFlow
+
+**Dépendances** : FR009 (Config), FR010 (Secrets SMTP)
+
+**Effort** : 2h30
+
+**Priorité** : SHOULD (V2)
+
+---
+
+### Story FR012 - Session 4 (15h10) : Sécurisation des Flux et Logging
+
+**À faire** : Assainir les entrées et les traces (éviter fuite données sensibles).
+
+**Objectif** : Validation stricte des inputs (anti-injection) + logging structuré sécurisé (Serilog).
+
+**Acceptance Criteria** :
+- ✅ Validation inputs avec Data Annotations (`[Required]`, `[EmailAddress]`, etc.)
+- ✅ Package `Serilog` installé et configuré
+- ✅ Logs structurés (JSON) au lieu de `Console.WriteLine()`
+- ✅ Masquage données sensibles dans logs (mots de passe, emails partiels)
+- ✅ Démonstration : Validation model + logging sécurisé
+- ✅ Exercice : Ajouter validation et logging dans ValidFlow
+
+**Dépendances** : FR009 (Config pour Serilog)
+
+**Effort** : 2h
+
+**Priorité** : SHOULD (V2)
+
+---
+
 ## Epic 4 - Jour 4 : Garantir la Qualité (Tests) et Conteneurisation
+
+**🎯 Enjeu Client** : Le filet de sécurité absolu. Pouvoir refactoriser sans crainte et déployer l'application partout (fin de la dépendance à Windows).
 
 **Stories** : FR013 (Tests Unitaires), FR014 (Tests Intégration), FR015 (Cross-Platform), FR016 (Docker)
 
@@ -510,11 +604,202 @@ Chaque Story suit le format :
 
 ---
 
-## Epic 5 - Jour 5 : CI/CD & Bilan
+### Story FR013 - Session 1 (09h00) : Le Filet de Sécurité (Tests Unitaires)
+
+**À faire** : Adresser le problème "Code sans Tests".
+
+**Objectif** : Créer projet xUnit et rédiger tests unitaires sur Domain (moteur validation) avec >80% couverture.
+
+**Acceptance Criteria** :
+- ✅ Projet `ValidFlow.Domain.Tests` créé avec xUnit
+- ✅ Tests unitaires sur `MinLengthRule`, `MaxLengthRule`, `MandatoryRule`
+- ✅ Mock des interfaces avec Moq ou NSubstitute
+- ✅ Couverture >80% sur projet Domain (via `dotnet test --collect:"XPlat Code Coverage"`)
+- ✅ Tests passent en vert (`dotnet test`)
+- ✅ Démonstration : TDD (Red-Green-Refactor) sur nouvelle règle
+- ✅ Exercice : Écrire 5 tests unitaires pour ValidFlow
+
+**Dépendances** : FR005 (DI pour injection mocks)
+
+**Effort** : 1h30
+
+**Priorité** : SHOULD (V2)
+
+---
+
+### Story FR014 - Session 2 (10h40) : Tests d'Intégration
+
+**À faire** : Valider que l'application communique bien avec l'extérieur (sans casser la base de prod).
+
+**Objectif** : Tests d'intégration sur Repository avec base In-Memory ou Testcontainers.
+
+**Acceptance Criteria** :
+- ✅ Projet `ValidFlow.Infrastructure.Tests` créé
+- ✅ Tests d'intégration sur `ClientRepository` (CRUD complet)
+- ✅ Base In-Memory ou Testcontainers pour isolation
+- ✅ Fixture xUnit pour setup/teardown DB
+- ✅ Tests vérifient interactions réelles EF Core
+- ✅ Démonstration : Test ajout/lecture Client avec DB réelle
+- ✅ Exercice : Créer tests intégration pour ValidFlow Repository
+
+**Dépendances** : FR007 (Repository Pattern), FR008 (Migrations)
+
+**Effort** : 1h30
+
+**Priorité** : SHOULD (V2)
+
+---
+
+### Story FR015 - Session 3 (13h30) : Préparation Multiplateforme (Vers Linux)
+
+**À faire** : Éradiquer les adhérences à Windows.
+
+**Objectif** : Remplacer chemins Windows hardcodés par chemins cross-platform et compiler en self-contained pour Linux.
+
+**Acceptance Criteria** :
+- ✅ Tous les chemins utilisent `Path.Combine()` (pas de `\` hardcodé)
+- ✅ Compilation self-contained Linux : `dotnet publish -r linux-x64 --self-contained`
+- ✅ Tests passent sur WSL (Windows Subsystem for Linux)
+- ✅ Aucune dépendance Windows (vérification dépendances)
+- ✅ Démonstration : Build et exécution sur WSL
+- ✅ Exercice : Rendre ValidFlow multiplateforme
+
+**Dépendances** : FR009 (Config avec chemins relatifs)
+
+**Effort** : 2h30
+
+**Priorité** : SHOULD (V2)
+
+---
+
+### Story FR016 - Session 4 (15h10) : Conteneurisation (Docker)
+
+**À faire** : Passer d'un déploiement manuel "Pet" à un déploiement standardisé "Cattle".
+
+**Objectif** : Écrire Dockerfile optimisé pour .NET 8, build image, exécution dans conteneur Linux.
+
+**Acceptance Criteria** :
+- ✅ Fichier `Dockerfile` créé avec multi-stage build
+- ✅ Image Docker construite : `docker build -t validflow:latest .`
+- ✅ Variables d'environnement passées au conteneur
+- ✅ Conteneur démarre et exécute batch : `docker run -e DB_PATH=/data/db validflow:latest`
+- ✅ Logs accessibles : `docker logs <container_id>`
+- ✅ Démonstration : Build et run dans Docker Desktop
+- ✅ Exercice : Dockeriser ValidFlow avec config via env vars
+
+**Dépendances** : FR015 (Cross-Platform), FR009 (Config env vars)
+
+**Effort** : 2h
+
+**Priorité** : SHOULD (V2)
+
+---
+
+## Epic 5 - Jour 5 : CI/CD, Documentation et Bilan
+
+**🎯 Enjeu Client** : Avoir une visibilité claire sur l'avenir, automatiser les processus laborieux et mesurer le retour sur investissement technique.
 
 **Stories** : FR017 (GitHub Actions), FR018 (Revue Code), FR019 (Documentation), FR020 (Bilan AS-IS/TO-BE)
 
 **Priorité** : **COULD** (V3)
+
+---
+
+### Story FR017 - Session 1 (09h00) : Automatisation (Introduction CI/CD)
+
+**À faire** : Finir l'ère du déploiement manuel risqué.
+
+**Objectif** : Créer workflow GitHub Actions basique pour automatiser compilation, tests et build Docker à chaque commit.
+
+**Acceptance Criteria** :
+- ✅ Fichier `.github/workflows/ci.yml` créé
+- ✅ Workflow déclenché sur `push` et `pull_request`
+- ✅ Étape 1 : Compilation (`dotnet build`)
+- ✅ Étape 2 : Exécution tests (`dotnet test`)
+- ✅ Étape 3 : Build image Docker
+- ✅ Badge GitHub Actions dans README (statut build)
+- ✅ Démonstration : Commit → Workflow auto → Tests passent
+- ✅ Exercice : Ajouter CI/CD à ValidFlow
+
+**Dépendances** : FR013 (Tests Unitaires), FR016 (Docker)
+
+**Effort** : 1h30
+
+**Priorité** : COULD (V3)
+
+---
+
+### Story FR018 - Session 2 (10h40) : Revue de Code Finale et Patterns Avancés
+
+**À faire** : Lisser les derniers détails architecturaux.
+
+**Objectif** : Session de refactoring en groupe. Application de patterns avancés si temps le permet (Mediator, gestion exceptions globales).
+
+**Acceptance Criteria** :
+- ✅ Revue de code en groupe (3 fichiers clés analysés)
+- ✅ Identification code smells (duplication, couplage fort)
+- ✅ Refactoring appliqué (Extract Method, Extract Class)
+- ✅ Théorie : Pattern Mediator (CQRS simplifié)
+- ✅ Théorie : Global Exception Handler (.NET 8)
+- ✅ Démonstration : Refactoring d'une classe complexe
+- ✅ Exercice : Refactoriser une partie de ValidFlow
+
+**Dépendances** : Tous les jours précédents (vue d'ensemble)
+
+**Effort** : 1h30
+
+**Priorité** : COULD (V3)
+
+---
+
+### Story FR019 - Session 3 (13h30) : Documentation de la Solution
+
+**À faire** : Rendre le projet transmissible à d'autres développeurs.
+
+**Objectif** : Rédaction README.md complet avec instructions build multiplateforme, tests, secrets, Docker.
+
+**Acceptance Criteria** :
+- ✅ Fichier `README.md` complet créé
+- ✅ Section : Prérequis (.NET 8 SDK, Docker)
+- ✅ Section : Build local (`dotnet build`, `dotnet test`)
+- ✅ Section : Configuration secrets (`dotnet user-secrets`)
+- ✅ Section : Docker (`docker build`, `docker run`)
+- ✅ Section : CI/CD (GitHub Actions)
+- ✅ Diagramme architecture (Mermaid ou image)
+- ✅ Démonstration : Nouveau dev suit README et démarre projet
+- ✅ Exercice : Documenter ValidFlow
+
+**Dépendances** : Tous les jours précédents
+
+**Effort** : 2h30
+
+**Priorité** : COULD (V3)
+
+---
+
+### Story FR020 - Session 4 (15h10) : Bilan AS-IS vs TO-BE et Prochaines Étapes
+
+**À faire** : Mesurer la valeur créée pendant les 5 jours.
+
+**Objectif** : Présentation métriques, discussion architecture future (Kubernetes, scalabilité), clôture formation.
+
+**Acceptance Criteria** :
+- ✅ Tableau comparatif AS-IS (Legacy) vs TO-BE (.NET 8)
+- ✅ Métriques présentées :
+  - Temps exécution tests (manuel vs automatisé)
+  - Couverture code (0% → >80%)
+  - Sécurité secrets (hardcodés → User Secrets/Env Vars)
+  - Déploiement (manuel → CI/CD Docker)
+- ✅ Discussion : Scalabilité future (Kubernetes, Docker Swarm)
+- ✅ Discussion : Prochaines étapes projet (API REST, Microservices)
+- ✅ Questionnaire satisfaction formation
+- ✅ Remise certificat de formation (optionnel)
+
+**Dépendances** : Tous les jours précédents
+
+**Effort** : 2h
+
+**Priorité** : COULD (V3)
 
 ---
 
@@ -530,9 +815,22 @@ Chaque Story suit le format :
 | FR006 | 2 | Jour 2 - 10h40 | 3h | SHOULD | V2 |
 | FR007 | 2 | Jour 2 - 13h30 | 2h30 | SHOULD | V2 |
 | FR008 | 2 | Jour 2 - 15h10 | 2h | SHOULD | V2 |
-| FR009-FR020 | 3-5 | Jours 3-5 | TBD | SHOULD/COULD | V2/V3 |
+| FR009 | 3 | Jour 3 - 09h00 | 1h30 | SHOULD | V2 |
+| FR010 | 3 | Jour 3 - 10h40 | 1h30 | SHOULD | V2 |
+| FR011 | 3 | Jour 3 - 13h30 | 2h30 | SHOULD | V2 |
+| FR012 | 3 | Jour 3 - 15h10 | 2h | SHOULD | V2 |
+| FR013 | 4 | Jour 4 - 09h00 | 1h30 | SHOULD | V2 |
+| FR014 | 4 | Jour 4 - 10h40 | 1h30 | SHOULD | V2 |
+| FR015 | 4 | Jour 4 - 13h30 | 2h30 | SHOULD | V2 |
+| FR016 | 4 | Jour 4 - 15h10 | 2h | SHOULD | V2 |
+| FR017 | 5 | Jour 5 - 09h00 | 1h30 | COULD | V3 |
+| FR018 | 5 | Jour 5 - 10h40 | 1h30 | COULD | V3 |
+| FR019 | 5 | Jour 5 - 13h30 | 2h30 | COULD | V3 |
+| FR020 | 5 | Jour 5 - 15h10 | 2h | COULD | V3 |
 
-**Total Effort MVP (V1 - Epic 1)** : 9h30 (génération contenu Jour 1 complet)
+**Total Effort MVP (V1 - Epic 1)** : 9h30 (Jour 1 complet)
+**Total Effort V2 (Epics 1-4)** : 33h30 (Jours 1-4 complets)
+**Total Effort V3 (Epics 1-5)** : 41h (Formation complète 5 jours)
 
 ---
 
