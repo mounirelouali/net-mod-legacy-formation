@@ -1812,3 +1812,442 @@ Vous avez implémenté le Repository Pattern :
 **Prochaine session** : Migrations EF Core et gestion de l'évolution du schéma de base de données.
 
 ---
+
+# Session 4 (15h10) - Migrations et Base In-Memory pour Tests
+
+> **Durée** : 2h  
+> **Objectif** : Gérer l'évolution du schéma de base de données avec les migrations et tester sans SQL avec In-Memory DB
+
+---
+
+## 🧠 Concepts Théoriques
+
+### Pourquoi les Migrations EF Core ?
+
+**Problème (Méthode Legacy - Scripts SQL manuels)** :
+
+Vous êtes en 2026. Votre application legacy a évolué pendant 10 ans. Chaque fois que le schéma DB change :
+
+1. **Développeur** écrit un script SQL `ALTER TABLE` manuellement
+2. **DBA** exécute le script sur Production (à minuit un vendredi)
+3. **Si ça plante** → Rollback manuel (stress maximal 😰)
+4. **Tracking** : Fichiers SQL dans un dossier `Scripts/2026/` (désordre total)
+
+**Conséquences** :
+- ❌ **Aucun versioning automatique** : Quelle est la version actuelle du schéma ?
+- ❌ **Pas de rollback fiable** : Comment revenir à la version précédente ?
+- ❌ **Désynchronisation** : Schéma Prod ≠ Schéma Dev
+- ❌ **Erreurs humaines** : Oubli de `WHERE` dans un `DELETE` → Catastrophe
+
+---
+
+### 🟢 Solution : Migrations EF Core (Git pour la DB)
+
+**Principe** : EF Core génère automatiquement les scripts SQL basés sur les changements de modèle C#.
+
+**Fonctionnement** :
+
+1. **Vous modifiez** `Client.cs` (ajout propriété `Phone`)
+2. **EF Core détecte** le changement automatiquement
+3. **Commande** : `dotnet ef migrations add AddPhoneToClient`
+4. **EF Core génère** :
+   - Fichier C# `20260320_AddPhoneToClient.cs` (migration)
+   - Méthode `Up()` : Ajoute la colonne `Phone`
+   - Méthode `Down()` : Rollback (supprime la colonne)
+5. **Application** : `dotnet ef database update`
+6. **Résultat** : Table `Clients` a maintenant une colonne `Phone`
+
+**Avantages** :
+- ✅ **Versioning automatique** : Chaque migration = 1 version de la DB
+- ✅ **Rollback simple** : `dotnet ef database update PreviousMigration`
+- ✅ **Synchronisation** : Code C# = source de vérité unique
+- ✅ **Revue de code** : Migrations dans Git = review avant Production
+
+---
+
+### 📈 Diagramme : Cycle de Vie des Migrations
+
+```mermaid
+graph LR
+    A["Modifier Entity<br/>(Client.cs)"] --> B["dotnet ef migrations add<br/>AddPhone"]
+    B --> C["Migration générée<br/>(Up + Down)"]
+    C --> D["Review Code<br/>(Git Pull Request)"]
+    D --> E{"Appliquer?"}
+    E -->|Oui| F["dotnet ef database update"]
+    E -->|Non| G["dotnet ef migrations remove"]
+    F --> H["DB mise à jour<br/>(✅ Colonne Phone)"]
+    G --> A
+    
+    style A fill:#fff3cd,stroke:#ffc107,stroke-width:2px
+    style C fill:#d4edda,stroke:#28a745,stroke-width:2px
+    style F fill:#cfe2ff,stroke:#0d6efd,stroke-width:2px
+    style H fill:#d4edda,stroke:#28a745,stroke-width:3px
+```
+
+---
+
+### 🧪 In-Memory DB pour Tests (Sans SQL Server)
+
+**Problème (Tests avec vraie DB)** :
+
+Vous testez `ClientService.CreateClient()` :
+
+```csharp
+[Test]
+public void CreateClient_ValidData_SavesInDatabase()
+{
+    // Problème : Il faut une vraie base SQL Server
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+        .UseSqlServer("Server=(localdb)\\mssqllocaldb;...");
+    var db = new AppDbContext(options);
+    
+    var repo = new ClientRepository(db);
+    var service = new ClientService(repo);
+    
+    service.CreateClient("Alice", "alice@example.com");
+    
+    // Test LENT (base SQL), FRAGILE (config DB requise), COMPLEXE
+}
+```
+
+**Conséquences** :
+- ❌ **Lent** : Connexion SQL + I/O disque = 100-500ms par test
+- ❌ **Fragile** : Si SQL Server plante, tous les tests échouent
+- ❌ **Setup complexe** : Chaque dev doit avoir SQL Server installé
+- ❌ **Pollution de données** : Tests laissent des données résiduelles
+
+---
+
+**Solution : In-Memory Database (SQLite ou EF Core InMemory)**
+
+```csharp
+[Test]
+public void CreateClient_ValidData_SavesInDatabase()
+{
+    // Base de données en MÉMOIRE (pas de SQL Server)
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+        .UseInMemoryDatabase(databaseName: "TestDB");
+    var db = new AppDbContext(options);
+    
+    var repo = new ClientRepository(db);
+    var service = new ClientService(repo);
+    
+    service.CreateClient("Alice", "alice@example.com");
+    
+    // Vérification
+    var clients = db.Clients.ToList();
+    Assert.Equal(1, clients.Count);
+    Assert.Equal("Alice", clients[0].Name);
+}
+```
+
+**Avantages** :
+- ✅ **Rapide** : 1-5ms par test (en mémoire RAM)
+- ✅ **Fiable** : Pas de dépendance externe
+- ✅ **Simple** : Aucune config SQL requise
+- ✅ **Isolé** : Chaque test a sa propre base (pas de pollution)
+
+**Métaphore (humour)** :
+> Tester avec une vraie DB = Faire un test de conduite avec une vraie voiture sur l'autoroute. 🚗
+>
+> Tester avec In-Memory DB = Faire le test sur un simulateur. 🎮 Risque zéro, résultat identique.
+
+---
+
+## 💬 Analyse Collective
+
+**Question à réfléchir** :
+
+> "Vous avez 100 tests unitaires qui valident la logique métier. Chaque test prend 200ms avec une vraie base SQL. Combien de temps pour exécuter tous les tests ? Et avec In-Memory DB (5ms par test) ?"
+
+**Prenez 5-8 secondes pour réfléchir avant de répondre.**
+
+**Réponse attendue** :
+- **Vraie DB** : 100 tests × 200ms = **20 secondes** ⏱️
+- **In-Memory DB** : 100 tests × 5ms = **0,5 seconde** ⚡
+
+**Impact** : Avec In-Memory, vous exécutez les tests **40 fois plus vite** → Feedback instantané, développement plus rapide.
+
+---
+
+## 👨‍💻 Démonstration Live
+
+**🎯 Ce que vous allez voir** :
+
+Le formateur va :
+1. Ajouter une propriété `Phone` à `Client`
+2. Créer une migration `AddPhoneToClient`
+3. Appliquer la migration
+4. Créer un test avec In-Memory DB
+
+**📂 Répertoire de Travail Formateur** : `01_Demo_Formateur/ValidFlow.Modern/`
+
+**Étapes** :
+
+### Étape 1 : Modifier l'Entity Client
+
+**Fichier** : `ValidFlow.Domain/Entities/Client.cs`
+
+```csharp
+namespace ValidFlow.Domain.Entities;
+
+public record Client(int Id, string Name, string Email, string? Phone); // ✅ Ajout Phone
+```
+
+### Étape 2 : Créer la Migration
+
+```bash
+cd ValidFlow.Infrastructure
+dotnet ef migrations add AddPhoneToClient --startup-project ../ValidFlow.Console
+```
+
+**Résultat** : Fichier généré `Migrations/20260320_AddPhoneToClient.cs`
+
+**Contenu (généré automatiquement)** :
+```csharp
+using Microsoft.EntityFrameworkCore.Migrations;
+
+public partial class AddPhoneToClient : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.AddColumn<string>(
+            name: "Phone",
+            table: "Clients",
+            type: "nvarchar(max)",
+            nullable: true);
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropColumn(
+            name: "Phone",
+            table: "Clients");
+    }
+}
+```
+
+### Étape 3 : Appliquer la Migration
+
+```bash
+dotnet ef database update --startup-project ../ValidFlow.Console
+```
+
+**Résultat** :
+```
+Applying migration '20260320_AddPhoneToClient'.
+Done.
+```
+
+**Vérification** : Ouvrez SSMS → Table `Clients` a maintenant une colonne `Phone`.
+
+### Étape 4 : Créer un Test avec In-Memory DB
+
+**Installer le package In-Memory** :
+```bash
+cd ValidFlow.Infrastructure.Tests
+dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 9.0.3
+```
+
+**Fichier** : `ValidFlow.Infrastructure.Tests/ClientRepositoryTests.cs`
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+using ValidFlow.Domain.Entities;
+using ValidFlow.Infrastructure.Data;
+using ValidFlow.Infrastructure.Repositories;
+using Xunit;
+
+namespace ValidFlow.Infrastructure.Tests;
+
+public class ClientRepositoryTests
+{
+    [Fact]
+    public void Add_Client_SavesSuccessfully()
+    {
+        // Arrange : Créer une base In-Memory
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDB_Add")
+            .Options;
+        
+        var db = new AppDbContext(options);
+        var repository = new ClientRepository(db);
+        
+        // Act : Ajouter un client
+        var client = new Client(0, "Bob", "bob@example.com", "+33612345678");
+        repository.Add(client);
+        repository.SaveChanges();
+        
+        // Assert : Vérifier que le client est en base
+        var clients = db.Clients.ToList();
+        Assert.Single(clients); // 1 seul client
+        Assert.Equal("Bob", clients[0].Name);
+        Assert.Equal("+33612345678", clients[0].Phone);
+    }
+    
+    [Fact]
+    public void GetById_ExistingClient_ReturnsClient()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDB_GetById")
+            .Options;
+        
+        var db = new AppDbContext(options);
+        var repository = new ClientRepository(db);
+        
+        var client = new Client(0, "Alice", "alice@example.com", null);
+        repository.Add(client);
+        repository.SaveChanges();
+        
+        var savedId = db.Clients.First().Id;
+        
+        // Act
+        var result = repository.GetById(savedId);
+        
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Alice", result!.Name);
+    }
+    
+    [Fact]
+    public void Delete_ExistingClient_RemovesClient()
+    {
+        // Arrange
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDB_Delete")
+            .Options;
+        
+        var db = new AppDbContext(options);
+        var repository = new ClientRepository(db);
+        
+        var client = new Client(0, "Charlie", "charlie@example.com", null);
+        repository.Add(client);
+        repository.SaveChanges();
+        
+        var savedId = db.Clients.First().Id;
+        
+        // Act
+        repository.Delete(savedId);
+        repository.SaveChanges();
+        
+        // Assert
+        var clients = db.Clients.ToList();
+        Assert.Empty(clients); // Aucun client en base
+    }
+}
+```
+
+### Étape 5 : Exécuter les Tests
+
+```bash
+dotnet test
+```
+
+**Résultat attendu** :
+```
+Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration: < 100 ms
+```
+
+**💬 Message formateur** :
+> "Vous voyez ? 3 tests exécutés en moins de 100ms. Pas de SQL Server, pas de configuration, pas de pollution de données. C'est ça, la puissance d'In-Memory DB pour les tests."
+
+---
+
+## ⚙️ Défi d'Application
+
+**Mission** : Ajouter une propriété `City` à `Client`, créer une migration, l'appliquer, et écrire 2 tests avec In-Memory DB.
+
+**📂 Répertoire de Travail Stagiaires** : `02_Atelier_Stagiaires/ValidFlow.Modern/`
+
+**⏱️ Durée** : 45 minutes
+
+---
+
+**Étapes** :
+
+1. **Modifier Client.cs**
+   - Ajouter propriété `string? City` dans le record `Client`
+
+2. **Créer la migration**
+   ```bash
+   cd ValidFlow.Infrastructure
+   dotnet ef migrations add AddCityToClient --startup-project ../ValidFlow.Console
+   ```
+
+3. **Appliquer la migration**
+   ```bash
+   dotnet ef database update --startup-project ../ValidFlow.Console
+   ```
+
+4. **Vérifier dans SSMS ou VS Code**
+   - Table `Clients` doit avoir une colonne `City`
+
+5. **Créer le projet de tests**
+   ```bash
+   dotnet new xunit -n ValidFlow.Infrastructure.Tests
+   cd ValidFlow.Infrastructure.Tests
+   dotnet add reference ../ValidFlow.Domain/ValidFlow.Domain.csproj
+   dotnet add reference ../ValidFlow.Infrastructure/ValidFlow.Infrastructure.csproj
+   dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 9.0.3
+   ```
+
+6. **Écrire 2 tests avec In-Memory DB**
+   - Test 1 : `Add_ClientWithCity_SavesSuccessfully()`
+   - Test 2 : `GetAll_ReturnsAllClients()`
+
+7. **Exécuter les tests**
+   ```bash
+   dotnet test
+   ```
+
+**Critères de Succès** :
+- [ ] `Client` a une propriété `City`
+- [ ] Migration `AddCityToClient` créée
+- [ ] Migration appliquée (table `Clients` a colonne `City`)
+- [ ] 2 tests écrits avec In-Memory DB
+- [ ] `dotnet test` affiche "Passed: 2"
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Pour démarrer** :
+- **Record C#** : `public record Client(int Id, string Name, string Email, string? Phone, string? City);`
+- **Migration** : `dotnet ef migrations add NomMigration --startup-project ProjetStartup`
+- **In-Memory DB** : `.UseInMemoryDatabase(databaseName: "TestDB_UnNomUnique")`
+- **xUnit** : `[Fact]` pour marquer une méthode de test
+
+**Si vous bloquez** :
+- **Erreur "No executable found matching command dotnet-ef"** : Installez `dotnet tool install --global dotnet-ef`
+- **Erreur "No DbContext found"** : Vérifiez le `--startup-project` (doit pointer vers un projet exécutable)
+- **Erreur "Build failed"** : Exécutez `dotnet build` dans Infrastructure avant `dotnet ef migrations add`
+- **Tests échouent** : Vérifiez que chaque test utilise un `databaseName` UNIQUE (sinon collision)
+
+**Pour aller plus loin** :
+- Créez une migration qui renomme `Email` en `EmailAddress` (`RenameColumn`)
+- Testez le rollback : `dotnet ef database update PreviousMigration`
+- Utilisez SQLite In-Memory au lieu de EF Core InMemory (plus proche de la vraie DB)
+
+---
+
+### 🔗 Documentation Officielle
+
+- [EF Core Migrations](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/)
+- [EF Core In-Memory Database](https://learn.microsoft.com/en-us/ef/core/testing/testing-without-the-database)
+- [xUnit Testing Framework](https://xunit.net/)
+
+---
+
+**🎯 Résumé Session 4**
+
+Vous avez maîtrisé les migrations et les tests :
+- ✅ Compris Migrations EF Core (Git pour la DB)
+- ✅ Ajouté une propriété `City` à `Client`
+- ✅ Créé et appliqué une migration `AddCityToClient`
+- ✅ Écrit 2 tests avec In-Memory DB (rapides, fiables, simples)
+- ✅ Exécuté les tests avec `dotnet test`
+
+**Prochaine étape** : Récapitulatif Jour 2 et préparation Jour 3 (Externalisation Config + Secrets).
+
+---
