@@ -837,9 +837,17 @@ Le formateur va configurer EF Core dans `ValidFlow.Infrastructure`, créer un `D
 **Méthode 1 : SQL Server Management Studio (SSMS)** - Recommandé
 
 1. Ouvrez **SQL Server Management Studio** (téléchargeable gratuitement)
-2. Connectez-vous à : `Server name: (localdb)\mssqllocaldb`
+2. **Dans la fenêtre de connexion** :
+   - **Server name** : `(localdb)\mssqllocaldb`
+   - **Authentication** : Windows Authentication
+   - ⚠️ **Cliquez sur "Options >>"** (en bas)
+   - **Onglet "Connection Properties"** → **Encrypt connection** : ❌ **Décocher**
+   - **OU** : **Trust server certificate** : ✅ **Cocher**
+   - Cliquez sur **Connect**
 3. Développez **Databases** → **ValidFlowDb** → **Tables**
 4. Faites clic droit sur `dbo.Clients` → **Select Top 1000 Rows**
+
+> ⚠️ **Important** : LocalDB ne supporte pas l'encryption SSL par défaut. Si vous obtenez l'erreur **"Error 20 - does not support encryption"**, vous DEVEZ désactiver l'encryption ou activer "Trust server certificate".
 
 **Méthode 2 : Visual Studio - Explorateur de Serveurs**
 
@@ -885,8 +893,12 @@ sqlcmd -S (localdb)\mssqllocaldb -d ValidFlowDb -Q "SELECT * FROM Clients"
    - **Server name** : `(localdb)\mssqllocaldb`
    - **Database name** : `ValidFlowDb` (ou laisser vide pour voir toutes les bases)
    - **Authentication Type** : `Integrated` (Windows Authentication)
+   - ⚠️ **Encrypt** : Sélectionnez **`Optional`** ou **`False`** (PAS "Mandatory")
+   - **Trust Server Certificate** : `True`
    - **Save Password** : `Yes`
    - **Profile Name** : `LocalDB - ValidFlow` (optionnel)
+
+> ⚠️ **Important** : Si vous obtenez **"Jdbc server is shutdown!"** ou **"Error 20"**, c'est que l'encryption est activée. LocalDB ne supporte pas l'encryption SSL par défaut → Mettez **Encrypt = Optional** et **Trust Server Certificate = True**.
 
 3. **Visualiser les tables et données**
    - Cliquez sur l'icône **SQL Server** dans la barre latérale gauche
@@ -935,6 +947,56 @@ sqlcmd -S (localdb)\mssqllocaldb -d ValidFlowDb -Q "SELECT * FROM Clients"
 > - ✅ Visualisation des résultats en grille
 > - ✅ Export des résultats en JSON/CSV/Excel
 > - ✅ Historique des requêtes
+
+#### 🚨 Dépannage : Erreurs de Connexion LocalDB
+
+**Erreur 1 : "Error 20 - does not support encryption" (SSMS)**
+
+**Message complet** :
+```
+Cannot connect to (localdb)\mssqllocaldb.
+The instance of SQL Server you attempted to connect to does not support encryption.
+Error Number: 20
+```
+
+**Cause** : SSMS 19+ active l'encryption SSL par défaut, mais LocalDB ne la supporte pas.
+
+**Solution** :
+1. **Dans SSMS** → Fenêtre de connexion
+2. Cliquez sur **"Options >>"** (en bas)
+3. **Onglet "Connection Properties"**
+4. **Décochez "Encrypt connection"** ✅
+5. **OU cochez "Trust server certificate"** ✅
+6. Cliquez sur **Connect**
+
+**Erreur 2 : "Jdbc server is shutdown!" (VS Code mssql)**
+
+**Cause** : Extension mssql tente de se connecter avec encryption activée par défaut.
+
+**Solution** :
+1. **Palette de commandes** → `MS SQL: Connect`
+2. **Encrypt** : Sélectionnez **`Optional`** ou **`False`**
+3. **Trust Server Certificate** : `True`
+4. Reconnectez-vous
+
+**Alternative : Modifier le profil de connexion manuellement** :
+1. Ouvrez la **palette de commandes** → `Preferences: Open User Settings (JSON)`
+2. Ajoutez :
+   ```json
+   "mssql.connections": [
+       {
+           "server": "(localdb)\\mssqllocaldb",
+           "database": "ValidFlowDb",
+           "authenticationType": "Integrated",
+           "encrypt": "optional",
+           "trustServerCertificate": true,
+           "profileName": "LocalDB - ValidFlow"
+       }
+   ]
+   ```
+3. Rechargez VS Code et reconnectez-vous
+
+---
 
 #### 🚨 Dépannage : "Je ne trouve pas la base ValidFlowDb"
 
