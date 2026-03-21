@@ -475,6 +475,39 @@ refactor(domain): Migration Client vers record C# 12
 
 ---
 
+### Règle Obligatoire : Code de Départ = Code Legacy RÉEL du Projet
+
+**⚠️ RÈGLE CRITIQUE** : Toutes les démonstrations live doivent partir du code Legacy RÉEL du projet `generationxml`.
+
+**Chemin du code Legacy** : `C:\dev\net-mod-legacy-formation\00_Reference_Client\generationxml\Program.cs`
+
+**Code Legacy à moderniser** :
+```csharp
+// SendEmail Legacy (lignes 94-103)
+static void SendEmail(string to, string subject, string body)
+{
+    var message = new MailMessage("noreply@example.com", to, subject, body);
+    var client = new SmtpClient("smtp.example.com")
+    {
+        Credentials = new NetworkCredential("username", "password"),
+        EnableSsl = true
+    };
+    client.Send(message);
+}
+```
+
+**Processus OBLIGATOIRE** :
+1. Lire le code Legacy réel de generationxml
+2. Identifier les problèmes (hardcodé, synchrone, non testable)
+3. Moderniser étape par étape vers .NET 8
+4. Chaque démonstration montre la transformation RÉELLE
+
+**INTERDIT** : Inventer du code de départ fictif qui n'existe pas dans le projet.
+
+**Validation** : Avant chaque démonstration live, vérifier que le code de départ existe réellement dans generationxml/Program.cs.
+
+---
+
 ### Règle Obligatoire : Consignes Adaptatives dans Démonstrations Live
 
 **⚠️ RÈGLE CRITIQUE** : Les instructions dans les Démonstrations Live doivent être utilisables par le formateur ET les stagiaires.

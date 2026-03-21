@@ -15,6 +15,31 @@
 **Durée** : 1h30  
 **Niveau** : ⭐⭐ Intermédiaire
 
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (2 minutes)
+
+**Objectif** : Créer une prise de conscience du risque de sécurité lié aux configurations hardcodées  
+**Message clé** : La configuration en clair est un vecteur d'attaque majeur en production
+
+Bonjour à tous ! Nous attaquons le Jour 3, et aujourd'hui, on va s'occuper de quelque chose de **CRITIQUE** pour la sécurité : la configuration.
+
+**Question interactive** : Qui a déjà vu un mot de passe SQL **en clair** dans un fichier `App.config` ou dans le code source ?
+
+*(La majorité des participants devrait lever la main - c'est un problème répandu)*
+
+Et combien d'entre vous ont ce code sur **GitHub public** ou **un serveur accessible** ?
+
+*(Quelques mains restent levées - moment de prise de conscience)*
+
+C'est la réalité de beaucoup de projets legacy. **Aujourd'hui, on règle ce problème définitivement.**
+
+On va voir comment .NET 8 permet d'externaliser TOUTE la configuration, de la rendre **testable**, et de séparer les secrets du code. C'est parti !
+
+---
+
 ### 🎯 Objectif de Performance
 
 À la fin de cette session, vous serez capable de **supprimer toutes les données en dur** dans le code et de **configurer une application .NET 8** avec des fichiers `appsettings.json` hiérarchiques, lus via le pattern **IOptions**.
@@ -299,22 +324,21 @@ public class DatabaseService
 
 #### **Étape 1 : Mise en situation (2 min)**
 
-**Code de départ** (à afficher à l'écran) :
+**Code de départ Legacy RÉEL** (extrait de `generationxml/Program.cs`) :
 ```csharp
-public class EmailNotificationService
+static void SendEmail(string to, string subject, string body)
 {
-    public void SendWelcomeEmail(string userEmail)
+    var message = new MailMessage("noreply@example.com", to, subject, body);
+    var client = new SmtpClient("smtp.example.com")
     {
-        string smtpHost = "smtp.company.com"; // ❌ Hardcodé
-        int smtpPort = 587; // ❌ Hardcodé
-        string fromEmail = "noreply@company.com"; // ❌ Hardcodé
-        
-        Console.WriteLine($"Envoi email de {fromEmail} via {smtpHost}:{smtpPort}");
-    }
+        Credentials = new NetworkCredential("username", "password"), // ❌ Hardcodé
+        EnableSsl = true
+    };
+    client.Send(message); // ❌ Synchrone bloquant
 }
 ```
 
-**📌 Contexte** : Voici un service d'envoi d'email typique legacy. Trois valeurs hardcodées. Si on veut changer le serveur SMTP en production, il faut recompiler. Nous allons moderniser ce code avec IOptions en 5 étapes.
+**📌 Contexte** : Voici le code Legacy réel du projet generationxml. Trois problèmes majeurs : credentials hardcodés, configuration figée, envoi synchrone. Nous allons moderniser ce code avec IOptions en 5 étapes.
 
 ---
 
@@ -550,29 +574,6 @@ Une fois l'exercice terminé, la **solution complète** sera partagée sur le Dr
 
 ---
 
-### 📋 Consignes de Session
-
-#### 📢 Ouverture de Session (2 minutes)
-
-**Objectif** : Créer une prise de conscience du risque de sécurité lié aux configurations hardcodées  
-**Message clé** : La configuration en clair est un vecteur d'attaque majeur en production
-
-Bonjour à tous ! Nous attaquons le Jour 3, et aujourd'hui, on va s'occuper de quelque chose de **CRITIQUE** pour la sécurité : la configuration.
-
-**Question interactive** : Qui a déjà vu un mot de passe SQL **en clair** dans un fichier `App.config` ou dans le code source ?
-
-*(La majorité des participants devrait lever la main - c'est un problème répandu)*
-
-Et combien d'entre vous ont ce code sur **GitHub public** ou **un serveur accessible** ?
-
-*(Quelques mains restent levées - moment de prise de conscience)*
-
-C'est la réalité de beaucoup de projets legacy. **Aujourd'hui, on règle ce problème définitivement.**
-
-On va voir comment .NET 8 permet d'externaliser TOUTE la configuration, de la rendre **testable**, et de séparer les secrets du code. C'est parti !
-
----
-
 #### ⚡ Lancement du Défi d'Application (2 minutes)
 
 **Objectif** : Mise en pratique du pattern IOptions  
@@ -599,6 +600,27 @@ Le chronomètre démarre... **maintenant** !
 **Durée** : 1h30  
 **Niveau** : ⭐⭐⭐ Avancé (Sécurité)
 
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (5 minutes)
+
+**Objectif** : Créer une prise de conscience du danger des secrets en clair  
+**Message clé** : User Secrets pour le Dev, Variables Env ou Key Vault pour la Prod
+
+Bienvenue pour cette deuxième session du Jour 3 ! On va maintenant traiter un problème **encore plus critique** que la configuration : les **secrets**.
+
+**Question interactive** : Combien d'entre vous ont déjà committé par accident un mot de passe sur Git ?
+
+*(Quelques mains se lèvent - c'est un problème ultra-fréquent)*
+
+Même si vous supprimez le commit après, **il reste dans l'historique Git à jamais**. Et si votre repo est public, les bots de GitHub scannent en permanence et récupèrent vos secrets en quelques secondes.
+
+Aujourd'hui, vous allez apprendre à **ne PLUS JAMAIS commiter un secret**. On va voir le .NET Secret Manager pour le développement, et les stratégies de production (variables d'environnement et Azure Key Vault).
+
+---
+
 ### 🎯 Objectif de Performance
 
 À la fin de cette session, vous serez capable de **sécuriser tous les credentials** (mots de passe, API keys, tokens) en utilisant **.NET Secret Manager** pour le développement et en comprenant les stratégies de production (Variables d'Environnement, Azure Key Vault).
@@ -621,7 +643,7 @@ public EmailService(IOptions<SmtpOptions> options)
 
 #### 💡 Métaphore : Le Coffre-Fort vs Le Paillasson
 
-<img src="../05_Ressources_Visuelles/J3_S2_INFOGRAPHIE_SECRETS.png" alt="Infographie Gestion des Secrets" style="max-width:100%; height:auto;">
+<img src="../05_Ressources_Visuelles/J3_S2_INFOGRAPHIE_SECRETS_KAWAII.png" alt="Infographie Gestion des Secrets (KAWAII)" style="max-width:100%; height:auto;">
 
 > **La clé sous le paillasson vs le coffre-fort biométrique** 🔐
 > 
@@ -1044,25 +1066,6 @@ Une fois l'exercice terminé, la **solution complète** sera partagée sur le Dr
 
 ---
 
-### 📋 Consignes de Session
-
-#### 📢 Ouverture de Session (5 minutes)
-
-**Objectif** : Créer une prise de conscience du danger des secrets en clair  
-**Message clé** : User Secrets pour le Dev, Variables Env ou Key Vault pour la Prod
-
-Bienvenue pour cette deuxième session du Jour 3 ! On va maintenant traiter un problème **encore plus critique** que la configuration : les **secrets**.
-
-**Question interactive** : Combien d'entre vous ont déjà committé par accident un mot de passe sur Git ?
-
-*(Quelques mains se lèvent - c'est un problème ultra-fréquent)*
-
-Même si vous supprimez le commit après, **il reste dans l'historique Git à jamais**. Et si votre repo est public, les bots de GitHub scannent en permanence et récupèrent vos secrets en quelques secondes.
-
-Aujourd'hui, vous allez apprendre à **ne PLUS JAMAIS commiter un secret**. On va voir le .NET Secret Manager pour le développement, et les stratégies de production (variables d'environnement et Azure Key Vault).
-
----
-
 #### ⚡ Lancement du Défi d'Application (2 minutes)
 
 **Objectif** : Sécuriser une connection string avec User Secrets  
@@ -1088,6 +1091,37 @@ Le chronomètre démarre... **maintenant** !
 
 **Durée** : 2h30  
 **Niveau** : ⭐⭐⭐ Avancé (Architecture + Sécurité + Async)
+
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (7 minutes)
+
+**Objectif** : Comprendre pourquoi SmtpClient est obsolète et pourquoi MailKit est le standard  
+**Message clé** : Microsoft recommande officiellement MailKit pour .NET Core/.NET 8
+
+Bonjour à tous ! On attaque la troisième session du Jour 3, et c'est une session importante : on va moderniser l'envoi d'emails.
+
+**Question interactive** : Qui utilise encore `System.Net.Mail.SmtpClient` dans ses projets ?
+
+*(Plusieurs mains se lèvent)*
+
+Et bien, je vais vous apprendre quelque chose qui va peut-être vous surprendre : **Microsoft a officiellement déclaré `SmtpClient` comme obsolète** depuis .NET Core. La documentation officielle recommande d'utiliser une librairie tierce : **MailKit**.
+
+Pourquoi ? Trois raisons :
+
+1. **SmtpClient est synchrone** → bloque un thread pendant 3-10 secondes par email
+2. **TLS est optionnel** → risque de faille de sécurité Man-in-the-Middle
+3. **Impossible à tester** → couplage fort avec le serveur SMTP
+
+Aujourd'hui, vous allez apprendre à utiliser **MailKit** : asynchrone, TLS obligatoire, testable, et maintenu activement par la communauté.
+
+On va voir l'architecture complète : interface `IEmailService`, implémentation `MailKitEmailService`, injection DI, et sécurisation TLS.
+
+C'est parti !
+
+---
 
 ### 🎯 Objectif de Performance
 
@@ -1115,7 +1149,7 @@ await _emailService.SendAsync(to, subject, body);
 
 #### 💡 Métaphore : La Vieille Camionnette vs Le Camion Électrique Moderne
 
-<img src="../05_Ressources_Visuelles/J3_S3_INFOGRAPHIE_MAILKIT.png" alt="Infographie MailKit" style="max-width:100%; height:auto;">
+<img src="../05_Ressources_Visuelles/J3_S3_INFOGRAPHIE_MAILKIT_KAWAII.png" alt="Infographie MailKit (KAWAII)" style="max-width:100%; height:auto;">
 
 > **La camionnette rouillée vs le camion électrique** 📧
 > 
@@ -1776,35 +1810,6 @@ Une fois l'exercice terminé, la **solution complète** sera partagée sur le Dr
 
 ---
 
-### 📋 Consignes de Session
-
-#### 📢 Ouverture de Session (7 minutes)
-
-**Objectif** : Comprendre pourquoi SmtpClient est obsolète et pourquoi MailKit est le standard  
-**Message clé** : Microsoft recommande officiellement MailKit pour .NET Core/.NET 8
-
-Bonjour à tous ! On attaque la troisième session du Jour 3, et c'est une session importante : on va moderniser l'envoi d'emails.
-
-**Question interactive** : Qui utilise encore `System.Net.Mail.SmtpClient` dans ses projets ?
-
-*(Plusieurs mains se lèvent)*
-
-Et bien, je vais vous apprendre quelque chose qui va peut-être vous surprendre : **Microsoft a officiellement déclaré `SmtpClient` comme obsolète** depuis .NET Core. La documentation officielle recommande d'utiliser une librairie tierce : **MailKit**.
-
-Pourquoi ? Trois raisons :
-
-1. **SmtpClient est synchrone** → bloque un thread pendant 3-10 secondes par email
-2. **TLS est optionnel** → risque de faille de sécurité Man-in-the-Middle
-3. **Impossible à tester** → couplage fort avec le serveur SMTP
-
-Aujourd'hui, vous allez apprendre à utiliser **MailKit** : asynchrone, TLS obligatoire, testable, et maintenu activement par la communauté.
-
-On va voir l'architecture complète : interface `IEmailService`, implémentation `MailKitEmailService`, injection DI, et sécurisation TLS.
-
-C'est parti !
-
----
-
 #### ⚡ Lancement du Défi d'Application (2 minutes)
 
 **Objectif** : Moderniser l'envoi d'email legacy avec MailKit  
@@ -1831,6 +1836,36 @@ Le chronomètre démarre... **maintenant** !
 **Durée** : 2h  
 **Niveau** : ⭐⭐⭐ Avancé (Sécurité + Observabilité + RGPD)
 
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (7 minutes)
+
+**Objectif** : Comprendre les risques des logs non structurés et des PII en clair  
+**Message clé** : Serilog JSON + Masquage PII = RGPD compliant
+
+Bienvenue pour la dernière session du Jour 3 ! On a déjà vu la configuration, les secrets, et l'envoi d'emails. Maintenant, on va s'attaquer à un problème **critique** pour la sécurité ET le RGPD : **les logs**.
+
+**Question interactive** : Qui a déjà vu des mots de passe ou des numéros de carte bancaire dans des logs en production ?
+
+*(Plusieurs mains se lèvent - malheureusement c'est fréquent)*
+
+En 2018, **Twitter a découvert qu'ils stockaient des mots de passe en clair dans leurs logs**. Des millions de comptes compromis.
+
+Aujourd'hui, vous allez apprendre à :
+1. **Valider TOUS les inputs** avec Data Annotations
+2. **Logger en JSON structuré** avec Serilog (indexable, requêtable)
+3. **Masquer automatiquement les PII** (emails, cartes bancaires, mots de passe)
+
+Deux règles d'or :
+- Ne **JAMAIS** logger de PII en clair
+- Ne **JAMAIS** utiliser l'interpolation $"..." avec Serilog
+
+C'est parti !
+
+---
+
 ### 🎯 Objectif de Performance
 
 À la fin de cette session, vous serez capable de **sécuriser les logs et les inputs** en utilisant **Serilog** pour des logs structurés JSON, **Data Annotations** pour la validation stricte, et des techniques de **masquage PII** (Personal Identifiable Information) pour respecter le RGPD.
@@ -1855,7 +1890,7 @@ _logger.LogInformation("User {MaskedEmail} logged in", MaskEmail(email));
 
 #### 💡 Métaphore : Le Registre Papier Désorganisé vs La Base de Données Sécurisée
 
-<img src="../05_Ressources_Visuelles/J3_S4_INFOGRAPHIE_LOGGING.png" alt="Infographie Logging Sérilog" style="max-width:100%; height:auto;">
+<img src="../05_Ressources_Visuelles/J3_S4_INFOGRAPHIE_LOGGING_KAWAII.png" alt="Infographie Logging Sérilog (KAWAII)" style="max-width:100%; height:auto;">
 
 > **Du registre papier au système structuré** 🔒
 > 
@@ -2562,34 +2597,6 @@ Une fois l'exercice terminé, la **solution complète** sera partagée sur le Dr
 | 📝 Synthèse Jour 3 + Questions | 17h02 | 17h10 | 8 min | 120 min |
 
 **Total Session** : **2h00** ✅
-
----
-
-### 📋 Consignes de Session
-
-#### 📢 Ouverture de Session (7 minutes)
-
-**Objectif** : Comprendre les risques des logs non structurés et des PII en clair  
-**Message clé** : Serilog JSON + Masquage PII = RGPD compliant
-
-Bienvenue pour la dernière session du Jour 3 ! On a déjà vu la configuration, les secrets, et l'envoi d'emails. Maintenant, on va s'attaquer à un problème **critique** pour la sécurité ET le RGPD : **les logs**.
-
-**Question interactive** : Qui a déjà vu des mots de passe ou des numéros de carte bancaire dans des logs en production ?
-
-*(Plusieurs mains se lèvent - malheureusement c'est fréquent)*
-
-En 2018, **Twitter a découvert qu'ils stockaient des mots de passe en clair dans leurs logs**. Des millions de comptes compromis.
-
-Aujourd'hui, vous allez apprendre à :
-1. **Valider TOUS les inputs** avec Data Annotations
-2. **Logger en JSON structuré** avec Serilog (indexable, requêtable)
-3. **Masquer automatiquement les PII** (emails, cartes bancaires, mots de passe)
-
-Deux règles d'or :
-- Ne **JAMAIS** logger de PII en clair
-- Ne **JAMAIS** utiliser l'interpolation `$"..."` avec Serilog
-
-C'est parti !
 
 ---
 
