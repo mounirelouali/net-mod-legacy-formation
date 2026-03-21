@@ -2,7 +2,8 @@
 
 **Destination** : NotebookLM - Génération Infographie  
 **Format** : Landscape (Paysage)  
-**Style** : Professionnel, technique, architecture logicielle
+**Style Visuel** : **KAWAII** (personnages mignons, couleurs pastel, icônes adorables)  
+**IMPORTANT** : Intégrer des **numéros d'étapes (①②③④⑤) directement dans l'image** avec phrases courtes explicatives
 
 ---
 
@@ -21,7 +22,7 @@ Expliquer visuellement la différence entre l'ancien client SMTP Legacy (.NET Fr
 ### Partie Gauche : ❌ AVANT (.NET Framework - SmtpClient)
 
 **Scène visuelle** :
-- Une vieille camionnette de livraison rouillée (SmtpClient)
+- Une vieille camionnette de livraison rouillée (SmtpClient) KAWAII
 - Un panneau "OBSOLÈTE" marqué Microsoft
 - Des fils électriques apparents (pas de TLS par défaut)
 - Code synchrone visible : `smtpClient.Send(message)` qui bloque un thread
@@ -104,6 +105,73 @@ builder.Services.AddTransient<IEmailService, MailKitEmailService>();
 
 ---
 
+## 🎯 ÉTAPES NUMÉROTÉES À INTÉGRER DANS L'IMAGE
+
+**IMPORTANT** : Chaque numéro d'étape doit apparaître **directement dans l'infographie** avec une phrase courte explicative.
+
+### **Étape ① - SmtpClient Obsolète (Zone Gauche)**
+**Texte dans l'image** : "① AVANT : SmtpClient synchrone → Thread bloqué 3-10s + TLS optionnel"  
+**Visuel** : Camionnette rouillée KAWAII, horloge qui tourne, cadenas ouvert, thread bloqué
+
+### **Étape ② - MailKit Async (Zone Droite Haut)**
+**Texte dans l'image** : "② APRÈS : MailKit async → `await SendAsync()` libère le thread"  
+**Visuel** : Camion électrique KAWAII moderne, éclair ⚡, threads multiples fluides
+
+### **Étape ③ - TLS Obligatoire (Zone Droite Milieu)**
+**Texte dans l'image** : "③ TLS 1.2/1.3 obligatoire : `SecureSocketOptions.StartTls` → Man-in-the-Middle impossible"  
+**Visuel** : Cadenas fermé KAWAII, bouclier de protection, certificat SSL
+
+### **Étape ④ - Interface Testable (Zone Droite Bas)**
+**Texte dans l'image** : "④ `IEmailService` → Mock dans tests unitaires, DI découplé"  
+**Visuel** : Schéma interface → implémentation, personnage testeur KAWAII avec checklist
+
+### **Étape ⑤ - Recommandation Microsoft (Bandeau Bas)**
+**Texte dans l'image** : "⑤ Microsoft recommande MailKit officiellement depuis .NET Core 2.0"  
+**Visuel** : Logo Microsoft, badge "Recommandé", check ✅
+
+---
+
+## Instructions pour NotebookLM
+
+Créez une infographie **style KAWAII** (personnages mignons, couleurs pastel, design adorable) en format **paysage (landscape)** qui :
+
+1. **Intègre les 5 étapes numérotées (①②③④⑤) directement dans l'image** avec phrases courtes
+2. Utilise la métaphore du camion électrique vs camionnette rouillée avec personnages KAWAII
+3. Montre visuellement les 3 problèmes de SmtpClient Legacy avec icônes mignons
+4. Présente les 3 avantages de MailKit Moderne avec design adorable
+5. Illustre l'architecture avec interface IEmailService de manière claire
+6. Compare les performances (synchrone vs asynchrone) avec schéma visuel
+7. Utilise des **icônes KAWAII** (camion mignon, cadenas adorable, éclair souriant)
+8. Applique la palette **KAWAII** : couleurs pastel (rose, bleu clair, vert menthe, violet doux)
+9. Met en évidence TLS obligatoire vs optionnel avec contraste visuel
+10. Affiche le badge "Recommandé par Microsoft" en évidence
+
+**Orientation** : Landscape (Paysage) obligatoire  
+**Style Visuel** : **KAWAII** - Design mignon, personnages adorables, couleurs pastel  
+**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8  
+**Numérotation** : Les 5 étapes (①②③④⑤) doivent être **visibles et lisibles** dans l'image finale
+
+---
+
+## Palette de Couleurs Suggérée
+
+- **Legacy (Gauche)** : Gris foncé / Marron (obsolète, rouille)
+- **Moderne (Droite)** : Bleu électrique / Vert (moderne, performant)
+- **Sécurité TLS** : Vert foncé avec cadenas doré
+- **Zone Centrale Architecture** : Blanc cassé (neutre)
+
+---
+
+## Éléments Visuels Clés
+
+1. **Contraste visuel** : Gauche terne (obsolète) vs Droite lumineuse (moderne)
+2. **Flux de données** : Flèches montrant le cycle SMTP : Connect → Auth → Send → Disconnect
+3. **Comparaison Performance** : Graphique comparant threads bloqués vs threads libérés
+4. **Séparation claire** : Ligne verticale séparant Legacy et Moderne
+5. **Hiérarchie visuelle** : Titre → Métaphore → Code → Architecture → Règle d'Or
+
+---
+
 ## Zones de Texte à Inclure
 
 ### Titre Principal (en haut)
@@ -127,40 +195,3 @@ dotnet add package MailKit
 3. Implémenter MailKitEmailService avec TLS
 4. Injecter via DI (AddTransient)
 5. Remplacer tous les `.Send()` par `await .SendAsync()`
-
----
-
-## Palette de Couleurs Suggérée
-
-- **Legacy (Gauche)** : Gris foncé / Marron (obsolète, rouille)
-- **Moderne (Droite)** : Bleu électrique / Vert (moderne, performant)
-- **Sécurité TLS** : Vert foncé avec cadenas doré
-- **Zone Centrale Architecture** : Blanc cassé (neutre)
-
----
-
-## Éléments Visuels Clés
-
-1. **Contraste visuel** : Gauche terne (obsolète) vs Droite lumineuse (moderne)
-2. **Flux de données** : Flèches montrant le cycle SMTP : Connect → Auth → Send → Disconnect
-3. **Comparaison Performance** : Graphique comparant threads bloqués vs threads libérés
-4. **Séparation claire** : Ligne verticale séparant Legacy et Moderne
-5. **Hiérarchie visuelle** : Titre → Métaphore → Code → Architecture → Règle d'Or
-
----
-
-## Instructions pour NotebookLM
-
-Créez une infographie en format **paysage (landscape)** qui :
-1. Utilise la métaphore de la camionnette rouillée (Legacy SmtpClient) vs camion électrique (MailKit)
-2. Montre visuellement les 3 zones pour MailKit : Architecture, Sécurité, Performance
-3. Illustre le pattern d'architecture avec interface IEmailService
-4. Compare visuellement synchrone bloquant vs asynchrone non-bloquant
-5. Met en évidence TLS obligatoire avec SecureSocketOptions
-6. Affiche des extraits de code C# clés (interface, async/await, DI)
-7. Inclut une section "Migration Rapide" en 5 étapes
-8. Met en évidence la règle d'or en bas
-
-**Orientation** : Landscape (Paysage) obligatoire  
-**Style** : Professionnel, technique, architecture logicielle moderne  
-**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8

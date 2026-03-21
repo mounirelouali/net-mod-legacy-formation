@@ -2,7 +2,8 @@
 
 **Destination** : NotebookLM - Génération Infographie  
 **Format** : Landscape (Paysage)  
-**Style** : Professionnel, éducatif, métaphore visuelle
+**Style Visuel** : **KAWAII** (personnages mignons, couleurs pastel, icônes adorables)  
+**IMPORTANT** : Intégrer des **numéros d'étapes (1, 2, 3...) directement dans l'image** avec phrases courtes explicatives
 
 ---
 
@@ -129,17 +130,54 @@ public EmailService(IOptions<SmtpOptions> options)
 
 ---
 
+## 🎯 ÉTAPES NUMÉROTÉES À INTÉGRER DANS L'IMAGE
+
+**IMPORTANT** : Chaque numéro d'étape doit apparaître **directement dans l'infographie** avec une phrase courte explicative.
+
+### **Étape ① - Le Danger (Zone Gauche)**
+**Texte dans l'image** : "① AVANT : Mot de passe hardcodé dans Web.config → Git = Fuite de données"  
+**Visuel** : Paillasson avec clé visible, fichier Web.config ouvert, hacker mignon style KAWAII qui récupère la clé
+
+---
+
+### **Étape ② - User Secrets Dev (Zone Droite Haut)**
+**Texte dans l'image** : "② DEV : `dotnet user-secrets set` → Secrets hors Git (%AppData%)"  
+**Visuel** : Terminal avec commande, dossier UserSecrets avec badge "Hors Git", personnage développeur KAWAII content
+
+---
+
+### **Étape ③ - Key Vault Production (Zone Droite Bas)**
+**Texte dans l'image** : "③ PROD : Azure Key Vault → Chiffré + Rotation automatique"  
+**Visuel** : Coffre-fort cloud KAWAII, cadenas biométrique, flèche rotation automatique
+
+---
+
+### **Étape ④ - Code Unifié (Zone Centrale)**
+**Texte dans l'image** : "④ Code identique Dev+Prod : `IOptions<SmtpOptions>` lit depuis User Secrets OU Key Vault"  
+**Visuel** : Extrait code C#, double flèche vers Dev et Prod
+
+---
+
+### **Étape ⑤ - Règle d'Or (Bandeau Bas)**
+**Texte dans l'image** : "⑤ RÈGLE : JAMAIS de secrets dans Git. User Secrets (Dev) + Variables Env (Prod)"  
+**Visuel** : Icône interdiction ⛔ + Git barré, check ✅ sur User Secrets et Key Vault
+
+---
+
 ## Instructions pour NotebookLM
 
-Créez une infographie en format **paysage (landscape)** qui :
-1. Utilise la métaphore du paillasson (Legacy) vs coffre-fort (Moderne)
-2. Montre visuellement les 3 zones : Legacy, Dev (.NET 8), Prod (.NET 8)
-3. Illustre le pattern `IOptions<T>` comme pont unifié entre Dev et Prod
-4. Inclut des icônes claires pour chaque concept (paillasson, coffre-fort, cloud, badge)
-5. Utilise des couleurs distinctes pour chaque zone
-6. Affiche des extraits de code et commandes clés
-7. Met en évidence la règle d'or en bas
+Créez une infographie **style KAWAII** (personnages mignons, couleurs pastel, design adorable) en format **paysage (landscape)** qui :
+
+1. **Intègre les 5 étapes numérotées (①②③④⑤) directement dans l'image** avec phrases courtes
+2. Utilise la métaphore du paillasson (Legacy) vs coffre-fort (Moderne) avec personnages KAWAII
+3. Montre visuellement les 3 zones : Legacy, Dev (.NET 8), Prod (.NET 8)
+4. Illustre le pattern `IOptions<T>` comme pont unifié entre Dev et Prod
+5. Utilise des **icônes KAWAII** (paillasson mignon, coffre-fort adorable, cloud avec sourire, badge temporaire)
+6. Applique la palette **KAWAII** : couleurs pastel (rose, bleu clair, vert menthe, violet doux)
+7. Affiche des extraits de code et commandes clés avec typographie claire
+8. Met en évidence la règle d'or en bas avec bandeau coloré
 
 **Orientation** : Landscape (Paysage) obligatoire  
-**Style** : Professionnel et éducatif avec métaphore visuelle forte  
-**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8
+**Style Visuel** : **KAWAII** - Design mignon, personnages adorables, couleurs pastel  
+**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8  
+**Numérotation** : Les 5 étapes (①②③④⑤) doivent être **visibles et lisibles** dans l'image finale

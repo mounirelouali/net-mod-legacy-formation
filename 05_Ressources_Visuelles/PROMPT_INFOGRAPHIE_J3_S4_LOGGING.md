@@ -2,7 +2,8 @@
 
 **Destination** : NotebookLM - Génération Infographie  
 **Format** : Landscape (Paysage)  
-**Style** : Professionnel, sécurité et observabilité
+**Style Visuel** : **KAWAII** (personnages mignons, couleurs pastel, icônes adorables)  
+**IMPORTANT** : Intégrer des **numéros d'étapes (①②③④⑤⑥) directement dans l'image** avec phrases courtes explicatives
 
 ---
 
@@ -217,5 +218,59 @@ Créez une infographie en format **paysage (landscape)** qui :
 8. Met en évidence la règle d'or en 4 points en bas
 
 **Orientation** : Landscape (Paysage) obligatoire  
-**Style** : Professionnel, sécurité et observabilité, RGPD  
-**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8
+**Style Visuel** : **KAWAII** - Design mignon, personnages adorables, couleurs pastel  
+**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8  
+**Numérotation** : Les 6 étapes (①②③④⑤⑥) doivent être **visibles et lisibles** dans l'image finale
+
+---
+
+## 🎯 ÉTAPES NUMÉROTÉES À INTÉGRER DANS L'IMAGE
+
+**IMPORTANT** : Chaque numéro d'étape doit apparaître **directement dans l'infographie** avec une phrase courte explicative.
+
+### **Étape ① - Console.WriteLine Dangereux (Zone Gauche)**
+**Texte dans l'image** : "① AVANT : `Console.WriteLine($\"{cardNumber}\")` → PII en clair + Non structuré"  
+**Visuel** : Registre papier KAWAII désordonné, carte bancaire 4532-1234-5678-9012 visible en rouge
+
+### **Étape ② - Serilog JSON Structuré (Zone Droite Haut)**
+**Texte dans l'image** : "② APRÈS : Serilog JSON → `{\"Amount\": 150, \"MaskedCard\": \"****-9012\"}` indexable"  
+**Visuel** : Base de données KAWAII organisée, structure JSON avec champs typés
+
+### **Étape ③ - Masquage PII (Zone Droite Milieu)**
+**Texte dans l'image** : "③ MaskCreditCard() : 4532-1234-5678-9012 → ****-****-****-9012 (RGPD compliant)"  
+**Visuel** : Fonction masquage KAWAII, carte avant/après, badge RGPD
+
+### **Étape ④ - Data Annotations (Zone Droite Bas)**
+**Texte dans l'image** : "④ `[Required][Range(1,10000)]` → Validation automatique, HTTP 400 si invalide"  
+**Visuel** : Attributs C#, porte d'entrée KAWAII avec gardien validateur
+
+### **Étape ⑤ - Coût RGPD (Encadré Danger)**
+**Texte dans l'image** : "⑤ Violation RGPD : 20M€ d'amende ou 4% CA annuel (Amazon : 746M€ 2021)"  
+**Visuel** : Icône alerte KAWAII, montant en gros, logo RGPD
+
+### **Étape ⑥ - Template Constant (Encadré Performance)**
+**Texte dans l'image** : "⑥ Template constant `\"Payment {Amount}\"` vs interpolation $\"\" → Performance optimale"  
+**Visuel** : Comparaison code, chrono KAWAII rapide vs lent
+
+---
+
+## Instructions pour NotebookLM
+
+Créez une infographie **style KAWAII** (personnages mignons, couleurs pastel, design adorable) en format **paysage (landscape)** qui :
+
+1. **Intègre les 6 étapes numérotées (①②③④⑤⑥) directement dans l'image** avec phrases courtes
+2. Utilise la métaphore du registre papier vs base de données indexée avec personnages KAWAII
+3. Montre visuellement les 3 dangers de Console.WriteLine avec icônes mignons
+4. Présente les avantages de Serilog JSON structuré avec design adorable
+5. Illustre le masquage PII (cartes bancaires, emails, mots de passe) AVANT/APRÈS
+6. Compare logs texte vs logs JSON structurés avec schéma visuel
+7. Inclut le coût légal RGPD avec cas réels (Amazon, Google) en encadré dramatique
+8. Met en évidence Data Annotations pour validation avec exemples code
+9. Utilise des **icônes KAWAII** (registre mignon, base de données adorable, gardien validateur)
+10. Applique la palette **KAWAII** : couleurs pastel (rose, bleu clair, vert menthe, violet doux)
+11. Affiche le badge "RGPD Compliant" en évidence
+
+**Orientation** : Landscape (Paysage) obligatoire  
+**Style Visuel** : **KAWAII** - Design mignon, personnages adorables, couleurs pastel  
+**Public** : Développeurs .NET intermédiaires migrant du legacy vers .NET 8  
+**Numérotation** : Les 6 étapes (①②③④⑤⑥) doivent être **visibles et lisibles** dans l'image finale

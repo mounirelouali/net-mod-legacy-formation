@@ -314,7 +314,7 @@ public class EmailNotificationService
 }
 ```
 
-**🎤 Dire** : *"Voici un service d'envoi d'email typique legacy. Trois valeurs hardcodées. Si je veux changer le serveur SMTP en production, je dois recompiler. On va moderniser ça avec IOptions en 5 étapes."*
+**📌 Contexte** : Voici un service d'envoi d'email typique legacy. Trois valeurs hardcodées. Si on veut changer le serveur SMTP en production, il faut recompiler. Nous allons moderniser ce code avec IOptions en 5 étapes.
 
 ---
 
@@ -336,7 +336,7 @@ public class EmailOptions
 }
 ```
 
-**🎤 Dire** : *"Propriétés publiques avec get/set. Valeurs par défaut pour éviter les null."*
+**💡 Point clé** : Propriétés publiques avec get/set. Valeurs par défaut pour éviter les null.
 
 ---
 
@@ -354,7 +354,7 @@ public class EmailOptions
 }
 ```
 
-**🎤 Dire** : *"Section 'Email' correspond au nom de la configuration. En production, je surcharge avec appsettings.Production.json."*
+**💡 Point clé** : La section 'Email' correspond au nom de la configuration. En production, on surcharge avec appsettings.Production.json.
 
 ---
 
@@ -383,7 +383,7 @@ public class EmailNotificationService
 }
 ```
 
-**🎤 Dire** : *"IOptions<EmailOptions> injecté au constructeur. Je récupère .Value une fois, je stocke dans un champ privé. Pas de hardcode."*
+**💡 Point clé** : IOptions<EmailOptions> injecté au constructeur. On récupère .Value une fois, on stocke dans un champ privé. Plus de hardcode.
 
 ---
 
@@ -415,7 +415,7 @@ var emailService = host.Services.GetRequiredService<EmailNotificationService>();
 emailService.SendWelcomeEmail("john.doe@example.com");
 ```
 
-**🎤 Dire** : *"Configure<EmailOptions> lie la section 'Email' du JSON. AddTransient enregistre le service. GetRequiredService récupère une instance."*
+**💡 Point clé** : Configure<EmailOptions> lie la section 'Email' du JSON. AddTransient enregistre le service. GetRequiredService récupère une instance.
 
 ---
 
@@ -428,7 +428,7 @@ emailService.SendWelcomeEmail("john.doe@example.com");
 Envoi email de noreply@company.com via smtp.company.com:587
 ```
 
-**🎤 Dire** : *"Ça fonctionne ! Maintenant, je modifie appsettings.json sans recompiler."*
+**✅ Résultat** : Ça fonctionne ! Maintenant, modifions appsettings.json sans recompiler.
 
 **Modification appsettings.json** :
 ```json
@@ -448,13 +448,13 @@ Envoi email de noreply@company.com via smtp.company.com:587
 Envoi email de support@company.com via smtp.gmail.com:465
 ```
 
-**🎤 Dire** : *"Changement de config sans recompiler. C'est exactement ce qu'on veut."*
+**✅ Résultat** : Changement de config sans recompiler. C'est exactement ce qu'on recherche.
 
 ---
 
 #### **Étape 4 : Transition vers le Défi (1 min)**
 
-**🎤 Dire** : *"Parfait ! Vous avez vu les 4 étapes : classe Options, appsettings.json, injection IOptions, enregistrement DI. Maintenant, à vous de le faire avec un BatchProcessor. Vous avez 20 minutes. Top chrono !"*
+**� Transition** : Les 4 étapes sont maintenant claires : classe Options, appsettings.json, injection IOptions, enregistrement DI. Passons à l'application pratique avec BatchProcessor (20 minutes).
 
 ---
 
@@ -1473,7 +1473,7 @@ public class NotificationService
 }
 ```
 
-**🎤 Dire** : *"Voici le code legacy typique : SmtpClient synchrone, TLS optionnel, impossible à tester. Microsoft recommande officiellement MailKit depuis .NET Core. On va migrer en 5 étapes."*
+**📌 Contexte** : Voici le code legacy typique : SmtpClient synchrone, TLS optionnel, impossible à tester. Microsoft recommande officiellement MailKit depuis .NET Core. Migration en 5 étapes.
 
 ---
 
@@ -1494,7 +1494,7 @@ dotnet add package MailKit
 info : Adding PackageReference for package 'MailKit' into project 'd:\...\ValidFlow.Infrastructure.csproj'.
 ```
 
-**🎤 Dire** : *"MailKit installe automatiquement MimeKit comme dépendance. On va utiliser MimeKit pour créer les messages."*
+**💡 Point clé** : MailKit installe automatiquement MimeKit comme dépendance. MimeKit sera utilisé pour créer les messages.
 
 ---
 
@@ -1512,7 +1512,7 @@ public interface IEmailService
 }
 ```
 
-**🎤 Dire** : *"Interface simple : une méthode async. Le code métier ne connaîtra jamais MailKit directement."*
+**💡 Point clé** : Interface simple : une méthode async. Le code métier ne connaît jamais MailKit directement.
 
 ---
 
@@ -1565,7 +1565,10 @@ public class MailKitEmailService : IEmailService
 }
 ```
 
-**🎤 Dire** : *"Trois points critiques : MimeMessage pour le message, SecureSocketOptions.StartTls pour TLS obligatoire, et await pour l'asynchrone. Le thread est libéré pendant l'envoi réseau."*
+**💡 Points critiques** : 
+- MimeMessage pour le message
+- SecureSocketOptions.StartTls pour TLS obligatoire
+- await pour l'asynchrone → Thread libéré pendant l'envoi réseau
 
 ---
 
@@ -1622,7 +1625,7 @@ var emailService = host.Services.GetRequiredService<IEmailService>();
 await emailService.SendAsync("test@example.com", "Test", "Corps du message");
 ```
 
-**🎤 Dire** : *"AddTransient : nouvelle instance à chaque injection. Ne JAMAIS réutiliser un SmtpClient."*
+**💡 Point clé** : AddTransient crée une nouvelle instance à chaque injection. Ne JAMAIS réutiliser un SmtpClient.
 
 ---
 
@@ -1635,7 +1638,7 @@ await emailService.SendAsync("test@example.com", "Test", "Corps du message");
 ✅ Email envoyé à test@example.com
 ```
 
-**🎤 Dire** : *"Parfait ! Maintenant, comparons les performances."*
+**✅ Résultat** : Parfait ! Comparons maintenant les performances.
 
 **Démonstration Async** (optionnel) :
 ```csharp
@@ -1646,13 +1649,16 @@ var tasks = Enumerable.Range(1, 10).Select(i =>
 await Task.WhenAll(tasks);
 ```
 
-**🎤 Dire** : *"Avec SmtpClient synchrone, 10 emails = 10 threads bloqués. Avec MailKit async, 10 emails = 2-3 threads max. Scalabilité maximale."*
+**📈 Comparaison performance** :
+- SmtpClient synchrone : 10 emails = 10 threads bloqués
+- MailKit async : 10 emails = 2-3 threads max
+- Résultat : Scalabilité maximale
 
 ---
 
 #### **Étape 4 : Transition vers le Défi (1 min)**
 
-**🎤 Dire** : *"Vous avez vu les 5 étapes : installer MailKit, créer IEmailService, implémenter avec TLS obligatoire, configurer EmailOptions, enregistrer DI. Maintenant, à vous de moderniser DocumentApprovalService. 40 minutes !"*
+**� Transition** : Les 5 étapes sont complètes : installer MailKit, créer IEmailService, implémenter avec TLS obligatoire, configurer EmailOptions, enregistrer DI. Application pratique avec DocumentApprovalService (40 minutes).
 
 ---
 
@@ -2224,7 +2230,7 @@ public class PaymentService
 }
 ```
 
-**🎤 Dire** : *"Voici le problème classique : Console.WriteLine avec interpolation, numéro de carte en clair. En 2018, Twitter a découvert qu'ils stockaient des mots de passe en clair dans leurs logs. On va sécuriser ça avec Serilog JSON et masquage PII."*
+**📌 Contexte** : Voici le problème classique : Console.WriteLine avec interpolation, numéro de carte en clair. En 2018, Twitter a découvert qu'ils stockaient des mots de passe en clair dans leurs logs. Sécurisation avec Serilog JSON et masquage PII.
 
 ---
 
@@ -2241,7 +2247,10 @@ dotnet add package Serilog.Sinks.File
 dotnet add package Serilog.Formatting.Json
 ```
 
-**🎤 Dire** : *"Trois packages : Serilog.AspNetCore pour ASP.NET Core, Sinks.File pour écrire dans des fichiers, et Formatting.Json pour le format JSON structuré."*
+**💡 Point clé** : Trois packages nécessaires :
+- Serilog.AspNetCore pour ASP.NET Core
+- Sinks.File pour écrire dans des fichiers
+- Formatting.Json pour le format JSON structuré
 
 ---
 
@@ -2283,7 +2292,10 @@ finally
 }
 ```
 
-**🎤 Dire** : *"UseSerilog() remplace le logger .NET. WriteTo.File crée un fichier par jour. Log.CloseAndFlush() est critique, sinon vous perdez les derniers logs."*
+**💡 Points critiques** :
+- UseSerilog() remplace le logger .NET par défaut
+- WriteTo.File crée un fichier par jour
+- Log.CloseAndFlush() est CRITIQUE : sinon perte des derniers logs
 
 ---
 
@@ -2318,7 +2330,10 @@ public static class PiiMasker
 }
 ```
 
-**🎤 Dire** : *"Carte bancaire : on garde les 4 derniers chiffres. Email : on garde 2 lettres + domaine. Mot de passe : toujours [REDACTED], JAMAIS loggé."*
+**💡 Règles de masquage** :
+- Carte bancaire : garder les 4 derniers chiffres uniquement
+- Email : garder 2 lettres + domaine
+- Mot de passe : toujours [REDACTED], JAMAIS loggé
 
 ---
 
@@ -2348,7 +2363,10 @@ public class PaymentService
 }
 ```
 
-**🎤 Dire** : *"Deux points critiques : masquage AVANT le log, et template constant 'Processing payment of {Amount}'. Jamais d'interpolation $"..." avec Serilog."*
+**💡 Points critiques** :
+- Masquage AVANT le log (fonction MaskCreditCard)
+- Template constant : `"Processing payment of {Amount}"`
+- Jamais d'interpolation $"..." avec Serilog
 
 ---
 
@@ -2373,7 +2391,7 @@ public class PaymentRequest
 }
 ```
 
-**🎤 Dire** : *"Data Annotations valident AVANT que les données n'entrent dans le système. Avec [ApiController], validation automatique, retour HTTP 400 si invalide."*
+**💡 Point clé** : Data Annotations valident AVANT l'entrée des données dans le système. Avec [ApiController], validation automatique → HTTP 400 si invalide.
 
 ---
 
@@ -2398,13 +2416,13 @@ curl -X POST https://localhost:5001/api/payment \
 }
 ```
 
-**🎤 Dire** : *"Regardez : le numéro de carte complet n'apparaît JAMAIS. Seuls les 4 derniers chiffres. Et c'est du JSON structuré, indexable dans ElasticSearch. RGPD compliant."*
+**✅ Résultat** : Le numéro de carte complet n'apparaît JAMAIS. Seuls les 4 derniers chiffres sont visibles. Format JSON structuré, indexable dans ElasticSearch. RGPD compliant.
 
 ---
 
 #### **Étape 4 : Transition vers le Défi (1 min)**
 
-**🎤 Dire** : *"Vous avez vu les 5 étapes : installer Serilog, configurer avec JSON, créer les masqueurs PII, injecter ILogger, ajouter Data Annotations. Maintenant, à vous de sécuriser un PaymentController complet. 30 minutes !"*
+**� Transition** : Les 5 étapes sont complètes : installer Serilog, configurer avec JSON, créer les masqueurs PII, injecter ILogger, ajouter Data Annotations. Application pratique avec PaymentController (30 minutes).
 
 ---
 

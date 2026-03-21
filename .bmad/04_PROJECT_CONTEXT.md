@@ -475,6 +475,33 @@ refactor(domain): Migration Client vers record C# 12
 
 ---
 
+### Règle Obligatoire : Consignes Adaptatives dans Démonstrations Live
+
+**⚠️ RÈGLE CRITIQUE** : Les instructions dans les Démonstrations Live doivent être utilisables par le formateur ET les stagiaires.
+
+**Format INTERDIT** :
+```markdown
+**🎤 Dire** : *"Phrase à dire au stagiaire"*
+```
+
+**Format OBLIGATOIRE** :
+```markdown
+**📌 Contexte** : Description neutre utilisable par tous
+**💡 Point clé** : Explication technique claire
+**✅ Résultat** : Ce qui se passe après l'action
+**🎯 Transition** : Passage à l'étape suivante
+```
+
+**Justification** : Les supports pédagogiques sont consultés par :
+1. Le formateur (pendant la session en direct)
+2. Les stagiaires (pendant les exercices et révisions)
+
+Le format "🎤 Dire" crée une distinction artificielle et donne l'impression que le formateur lit un script, ce qui nuit à la crédibilité.
+
+**Validation** : Aucune instruction ne doit contenir "🎤 Dire", "Dire aux stagiaires", "Expliquer que", etc.
+
+---
+
 ### Règle Obligatoire : Guide de Présentation pour Chaque Infographie
 
 **⚠️ RÈGLE CRITIQUE** : À chaque fois qu'une infographie NotebookLM est générée, l'agent DOIT créer un **Guide de Présentation** détaillé.
