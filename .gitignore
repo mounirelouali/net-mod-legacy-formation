@@ -114,3 +114,9 @@ documentation_complete_projet.md
 notebooklm-py_base_de_connaissances.md
 docs/
 # ----------------------------
+
+# --- RESSOURCES VISUELLES (FORMATEUR UNIQUEMENT) ---
+# Les infographies NotebookLM ne doivent PAS être accessibles aux stagiaires avant la formation
+# Solution : Hébergement Google Drive avec liens directs dans les .md
+05_Ressources_Visuelles/
+# -------------------------------------------------------

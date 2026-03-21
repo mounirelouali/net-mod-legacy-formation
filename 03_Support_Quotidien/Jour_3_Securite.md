@@ -293,6 +293,171 @@ public class DatabaseService
 
 ---
 
+### 🎬 Démonstration Live (15 min)
+
+**Objectif** : Montrer en temps réel la transformation d'un service avec configuration hardcodée vers IOptions.
+
+#### **Étape 1 : Mise en situation (2 min)**
+
+**Code de départ** (à afficher à l'écran) :
+```csharp
+public class EmailNotificationService
+{
+    public void SendWelcomeEmail(string userEmail)
+    {
+        string smtpHost = "smtp.company.com"; // ❌ Hardcodé
+        int smtpPort = 587; // ❌ Hardcodé
+        string fromEmail = "noreply@company.com"; // ❌ Hardcodé
+        
+        Console.WriteLine($"Envoi email de {fromEmail} via {smtpHost}:{smtpPort}");
+    }
+}
+```
+
+**🎤 Dire** : *"Voici un service d'envoi d'email typique legacy. Trois valeurs hardcodées. Si je veux changer le serveur SMTP en production, je dois recompiler. On va moderniser ça avec IOptions en 5 étapes."*
+
+---
+
+#### **Étape 2 : Live Coding (10 min)**
+
+**Étape 2.1 : Créer la classe Options (2 min)**
+
+*"Première étape : créer une classe fortement typée pour représenter notre configuration."*
+
+```csharp
+// Fichier : EmailOptions.cs
+namespace ValidFlow.Infrastructure.Options;
+
+public class EmailOptions
+{
+    public string SmtpHost { get; set; } = string.Empty;
+    public int SmtpPort { get; set; }
+    public string FromEmail { get; set; } = string.Empty;
+}
+```
+
+**🎤 Dire** : *"Propriétés publiques avec get/set. Valeurs par défaut pour éviter les null."*
+
+---
+
+**Étape 2.2 : Ajouter la section dans appsettings.json (2 min)**
+
+*"Deuxième étape : déplacer les valeurs hardcodées dans appsettings.json."*
+
+```json
+{
+  "Email": {
+    "SmtpHost": "smtp.company.com",
+    "SmtpPort": 587,
+    "FromEmail": "noreply@company.com"
+  }
+}
+```
+
+**🎤 Dire** : *"Section 'Email' correspond au nom de la configuration. En production, je surcharge avec appsettings.Production.json."*
+
+---
+
+**Étape 2.3 : Modifier le service pour injecter IOptions (3 min)**
+
+*"Troisième étape : modifier le service pour recevoir IOptions via le constructeur."*
+
+```csharp
+using Microsoft.Extensions.Options;
+
+public class EmailNotificationService
+{
+    private readonly EmailOptions _emailOptions;
+
+    // ✅ Injection DI
+    public EmailNotificationService(IOptions<EmailOptions> emailOptions)
+    {
+        _emailOptions = emailOptions.Value;
+    }
+
+    public void SendWelcomeEmail(string userEmail)
+    {
+        // ✅ Plus de hardcode, lecture depuis la config
+        Console.WriteLine($"Envoi email de {_emailOptions.FromEmail} via {_emailOptions.SmtpHost}:{_emailOptions.SmtpPort}");
+    }
+}
+```
+
+**🎤 Dire** : *"IOptions<EmailOptions> injecté au constructeur. Je récupère .Value une fois, je stocke dans un champ privé. Pas de hardcode."*
+
+---
+
+**Étape 2.4 : Enregistrer dans Program.cs (3 min)**
+
+*"Quatrième étape : lier la configuration dans le conteneur DI."*
+
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateDefaultBuilder(args);
+
+builder.ConfigureServices((context, services) =>
+{
+    // ✅ Lier la section "Email" du JSON à EmailOptions
+    services.Configure<EmailOptions>(
+        context.Configuration.GetSection("Email"));
+    
+    // ✅ Enregistrer le service
+    services.AddTransient<EmailNotificationService>();
+});
+
+var host = builder.Build();
+
+// Test
+var emailService = host.Services.GetRequiredService<EmailNotificationService>();
+emailService.SendWelcomeEmail("john.doe@example.com");
+```
+
+**🎤 Dire** : *"Configure<EmailOptions> lie la section 'Email' du JSON. AddTransient enregistre le service. GetRequiredService récupère une instance."*
+
+---
+
+#### **Étape 3 : Validation et Preuve (3 min)**
+
+**Exécution** : `dotnet run`
+
+**Output attendu** :
+```
+Envoi email de noreply@company.com via smtp.company.com:587
+```
+
+**🎤 Dire** : *"Ça fonctionne ! Maintenant, je modifie appsettings.json sans recompiler."*
+
+**Modification appsettings.json** :
+```json
+{
+  "Email": {
+    "SmtpHost": "smtp.gmail.com",
+    "SmtpPort": 465,
+    "FromEmail": "support@company.com"
+  }
+}
+```
+
+**Exécution** : `dotnet run` (sans recompile)
+
+**Output** :
+```
+Envoi email de support@company.com via smtp.gmail.com:465
+```
+
+**🎤 Dire** : *"Changement de config sans recompiler. C'est exactement ce qu'on veut."*
+
+---
+
+#### **Étape 4 : Transition vers le Défi (1 min)**
+
+**🎤 Dire** : *"Parfait ! Vous avez vu les 4 étapes : classe Options, appsettings.json, injection IOptions, enregistrement DI. Maintenant, à vous de le faire avec un BatchProcessor. Vous avez 20 minutes. Top chrono !"*
+
+---
+
 ### ⚙️ Défi d'Application (20 min)
 
 **Contexte** :
@@ -793,21 +958,6 @@ string password = config["Smtp:Password"];
 ```
 
 *(Laisser 10 secondes de réflexion)*
-
-**💡 Réponse attendue** :
-
-"Parce que `.AddUserSecrets()` n'est actif que si `ASPNETCORE_ENVIRONMENT=Development`. En production, cette ligne est ignorée et `password` sera `null`."
-
-**✅ Principe** : **Toujours tester en mode Production localement** avant de déployer.
-
----
-
-### ⚙️ Défi d'Application (25 min)
-
-**Contexte** :
-
-Vous héritez d'un service `DatabaseService` qui se connecte à SQL Server. Actuellement, le mot de passe de la base de données est **hardcodé** dans le code.
-
 **Mission** :
 
 1. Modifier `appsettings.json` pour y mettre la connection string **SANS mot de passe**
@@ -1293,6 +1443,216 @@ public class OrderController
     }
 }
 ```
+
+---
+
+### 🎬 Démonstration Live (20 min)
+
+**Objectif** : Montrer en temps réel la migration SmtpClient → MailKit avec TLS obligatoire + Async.
+
+#### **Étape 1 : Mise en situation (2 min)**
+
+**Code de départ** (à afficher à l'écran) :
+```csharp
+using System.Net;
+using System.Net.Mail;
+
+public class NotificationService
+{
+    public void SendWelcomeEmail(string userEmail)
+    {
+        var smtpClient = new SmtpClient("smtp.example.com");
+        smtpClient.Credentials = new NetworkCredential("user", "password");
+        
+        var message = new MailMessage("noreply@company.com", userEmail);
+        message.Subject = "Bienvenue !";
+        message.Body = "Votre compte a été créé.";
+        
+        smtpClient.Send(message); // ❌ Synchrone bloquant, TLS optionnel
+    }
+}
+```
+
+**🎤 Dire** : *"Voici le code legacy typique : SmtpClient synchrone, TLS optionnel, impossible à tester. Microsoft recommande officiellement MailKit depuis .NET Core. On va migrer en 5 étapes."*
+
+---
+
+#### **Étape 2 : Live Coding (15 min)**
+
+**Étape 2.1 : Installer MailKit (2 min)**
+
+*"Première étape : installer le package MailKit."*
+
+**Commande** :
+```bash
+cd ValidFlow.Infrastructure
+dotnet add package MailKit
+```
+
+**Output** :
+```
+info : Adding PackageReference for package 'MailKit' into project 'd:\...\ValidFlow.Infrastructure.csproj'.
+```
+
+**🎤 Dire** : *"MailKit installe automatiquement MimeKit comme dépendance. On va utiliser MimeKit pour créer les messages."*
+
+---
+
+**Étape 2.2 : Créer l'interface IEmailService (2 min)**
+
+*"Deuxième étape : créer une interface pour découpler le code métier de MailKit."*
+
+```csharp
+// Fichier : IEmailService.cs
+namespace ValidFlow.Infrastructure.Interfaces;
+
+public interface IEmailService
+{
+    Task SendAsync(string to, string subject, string body);
+}
+```
+
+**🎤 Dire** : *"Interface simple : une méthode async. Le code métier ne connaîtra jamais MailKit directement."*
+
+---
+
+**Étape 2.3 : Implémenter MailKitEmailService (5 min)**
+
+*"Troisième étape : implémenter l'interface avec MailKit."*
+
+```csharp
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+using Microsoft.Extensions.Options;
+
+namespace ValidFlow.Infrastructure.Services;
+
+public class MailKitEmailService : IEmailService
+{
+    private readonly EmailOptions _options;
+
+    public MailKitEmailService(IOptions<EmailOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    public async Task SendAsync(string to, string subject, string body)
+    {
+        // 1. Créer le message MIME
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("Company", _options.From));
+        message.To.Add(new MailboxAddress("", to));
+        message.Subject = subject;
+        message.Body = new TextPart("html") { Text = body };
+
+        // 2. Envoyer via SMTP avec TLS OBLIGATOIRE
+        using var client = new SmtpClient();
+        try
+        {
+            // ✅ TLS obligatoire (SecureSocketOptions.StartTls)
+            await client.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(_options.Username, _options.Password);
+            await client.SendAsync(message);
+            
+            Console.WriteLine($"✅ Email envoyé à {to}");
+        }
+        finally
+        {
+            await client.DisconnectAsync(true);
+        }
+    }
+}
+```
+
+**🎤 Dire** : *"Trois points critiques : MimeMessage pour le message, SecureSocketOptions.StartTls pour TLS obligatoire, et await pour l'asynchrone. Le thread est libéré pendant l'envoi réseau."*
+
+---
+
+**Étape 2.4 : Configuration EmailOptions (2 min)**
+
+*"Quatrième étape : créer EmailOptions et configurer appsettings.json."*
+
+```csharp
+public class EmailOptions
+{
+    public string Host { get; set; } = string.Empty;
+    public int Port { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string From { get; set; } = string.Empty;
+}
+```
+
+**appsettings.json** :
+```json
+{
+  "Email": {
+    "Host": "smtp.example.com",
+    "Port": 587,
+    "Username": "noreply@company.com",
+    "From": "noreply@company.com"
+  }
+}
+```
+
+**User Secrets** :
+```bash
+dotnet user-secrets set "Email:Password" "MonMotDePasseSMTP!"
+```
+
+---
+
+**Étape 2.5 : Enregistrer dans DI et tester (4 min)**
+
+*"Dernière étape : enregistrement DI."*
+
+```csharp
+// Program.cs
+builder.ConfigureServices((context, services) =>
+{
+    services.Configure<EmailOptions>(context.Configuration.GetSection("Email"));
+    services.AddTransient<IEmailService, MailKitEmailService>();
+});
+
+var host = builder.Build();
+
+// Test
+var emailService = host.Services.GetRequiredService<IEmailService>();
+await emailService.SendAsync("test@example.com", "Test", "Corps du message");
+```
+
+**🎤 Dire** : *"AddTransient : nouvelle instance à chaque injection. Ne JAMAIS réutiliser un SmtpClient."*
+
+---
+
+#### **Étape 3 : Validation et Preuve (3 min)**
+
+**Exécution** : `dotnet run`
+
+**Output attendu** :
+```
+✅ Email envoyé à test@example.com
+```
+
+**🎤 Dire** : *"Parfait ! Maintenant, comparons les performances."*
+
+**Démonstration Async** (optionnel) :
+```csharp
+// Envoi de 10 emails en parallèle
+var tasks = Enumerable.Range(1, 10).Select(i =>
+    emailService.SendAsync($"user{i}@example.com", "Test", "Message"));
+
+await Task.WhenAll(tasks);
+```
+
+**🎤 Dire** : *"Avec SmtpClient synchrone, 10 emails = 10 threads bloqués. Avec MailKit async, 10 emails = 2-3 threads max. Scalabilité maximale."*
+
+---
+
+#### **Étape 4 : Transition vers le Défi (1 min)**
+
+**🎤 Dire** : *"Vous avez vu les 5 étapes : installer MailKit, créer IEmailService, implémenter avec TLS obligatoire, configurer EmailOptions, enregistrer DI. Maintenant, à vous de moderniser DocumentApprovalService. 40 minutes !"*
 
 ---
 
@@ -1843,6 +2203,208 @@ public void CreateUser(string email, string password)
     _logger.LogInformation("Creating user with email {MaskedEmail}", maskedEmail);
 }
 ```
+
+---
+
+### 🎬 Démonstration Live (18 min)
+
+**Objectif** : Montrer en temps réel la migration Console.WriteLine → Serilog JSON + Masquage PII.
+
+#### **Étape 1 : Mise en situation (2 min)**
+
+**Code de départ** (à afficher à l'écran) :
+```csharp
+public class PaymentService
+{
+    public void ProcessPayment(decimal amount, string cardNumber)
+    {
+        // ❌ DANGEREUX : PII en clair, logs non structurés
+        Console.WriteLine($"Payment of {amount}€ for card {cardNumber}");
+    }
+}
+```
+
+**🎤 Dire** : *"Voici le problème classique : Console.WriteLine avec interpolation, numéro de carte en clair. En 2018, Twitter a découvert qu'ils stockaient des mots de passe en clair dans leurs logs. On va sécuriser ça avec Serilog JSON et masquage PII."*
+
+---
+
+#### **Étape 2 : Live Coding (13 min)**
+
+**Étape 2.1 : Installer Serilog (2 min)**
+
+*"Première étape : installer Serilog avec sink File pour écrire en JSON."*
+
+**Commandes** :
+```bash
+dotnet add package Serilog.AspNetCore
+dotnet add package Serilog.Sinks.File
+dotnet add package Serilog.Formatting.Json
+```
+
+**🎤 Dire** : *"Trois packages : Serilog.AspNetCore pour ASP.NET Core, Sinks.File pour écrire dans des fichiers, et Formatting.Json pour le format JSON structuré."*
+
+---
+
+**Étape 2.2 : Configurer Serilog dans Program.cs (3 min)**
+
+*"Deuxième étape : remplacer le logger .NET par défaut par Serilog."*
+
+```csharp
+using Serilog;
+using Serilog.Formatting.Json;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ✅ Configuration Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Réduit le bruit
+    .WriteTo.Console(new JsonFormatter()) // Console en JSON
+    .WriteTo.File(
+        new JsonFormatter(),
+        "logs/app-.json",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7) // 7 jours de logs
+    .CreateLogger();
+
+builder.Host.UseSerilog(); // ✅ Remplace le logger par défaut
+
+var app = builder.Build();
+app.MapControllers();
+
+try
+{
+    Log.Information("Application started");
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush(); // ✅ IMPORTANT : Flush avant de quitter
+}
+```
+
+**🎤 Dire** : *"UseSerilog() remplace le logger .NET. WriteTo.File crée un fichier par jour. Log.CloseAndFlush() est critique, sinon vous perdez les derniers logs."*
+
+---
+
+**Étape 2.3 : Créer les méthodes de masquage PII (3 min)**
+
+*"Troisième étape : créer les méthodes pour masquer les données sensibles."*
+
+```csharp
+public static class PiiMasker
+{
+    public static string MaskCreditCard(string cardNumber)
+    {
+        if (string.IsNullOrEmpty(cardNumber) || cardNumber.Length < 4)
+            return "****";
+        
+        string cleaned = cardNumber.Replace("-", "").Replace(" ", "");
+        return "****-****-****-" + cleaned.Substring(cleaned.Length - 4);
+    }
+
+    public static string MaskEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email)) return "***";
+        
+        var parts = email.Split('@');
+        if (parts.Length != 2) return "***";
+        
+        string name = parts[0];
+        string maskedName = name.Length > 2 ? name.Substring(0, 2) + "***" : "***";
+        
+        return $"{maskedName}@{parts[1]}";
+    }
+}
+```
+
+**🎤 Dire** : *"Carte bancaire : on garde les 4 derniers chiffres. Email : on garde 2 lettres + domaine. Mot de passe : toujours [REDACTED], JAMAIS loggé."*
+
+---
+
+**Étape 2.4 : Modifier PaymentService avec ILogger (3 min)**
+
+*"Quatrième étape : injecter ILogger et logger avec template constant + masquage."*
+
+```csharp
+public class PaymentService
+{
+    private readonly ILogger<PaymentService> _logger;
+
+    public PaymentService(ILogger<PaymentService> logger)
+    {
+        _logger = logger;
+    }
+
+    public void ProcessPayment(decimal amount, string cardNumber)
+    {
+        // ✅ Masquage AVANT le log
+        string maskedCard = PiiMasker.MaskCreditCard(cardNumber);
+        
+        // ✅ Template constant (pas d'interpolation $"...")
+        _logger.LogInformation("Processing payment of {Amount}€ for card {MaskedCard}", 
+            amount, maskedCard);
+    }
+}
+```
+
+**🎤 Dire** : *"Deux points critiques : masquage AVANT le log, et template constant 'Processing payment of {Amount}'. Jamais d'interpolation $"..." avec Serilog."*
+
+---
+
+**Étape 2.5 : Ajouter Data Annotations (2 min)**
+
+*"Cinquième étape : validation stricte des inputs avec Data Annotations."*
+
+```csharp
+public class PaymentRequest
+{
+    [Required]
+    [Range(1, 10000)]
+    public decimal Amount { get; set; }
+
+    [Required]
+    [RegularExpression(@"^\d{16}$", ErrorMessage = "16 chiffres requis")]
+    public string CardNumber { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+}
+```
+
+**🎤 Dire** : *"Data Annotations valident AVANT que les données n'entrent dans le système. Avec [ApiController], validation automatique, retour HTTP 400 si invalide."*
+
+---
+
+#### **Étape 3 : Validation et Preuve (3 min)**
+
+**Exécution requête POST** :
+```bash
+curl -X POST https://localhost:5001/api/payment \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 150, "cardNumber": "4532123456789012", "email": "john@example.com"}'
+```
+
+**Ouvrir le fichier** `logs/app-20260321.json` :
+```json
+{
+  "@timestamp": "2026-03-21T01:30:00.123Z",
+  "@level": "Information",
+  "@message": "Processing payment of {Amount}€ for card {MaskedCard}",
+  "Amount": 150,
+  "MaskedCard": "****-****-****-9012",
+  "SourceContext": "PaymentService"
+}
+```
+
+**🎤 Dire** : *"Regardez : le numéro de carte complet n'apparaît JAMAIS. Seuls les 4 derniers chiffres. Et c'est du JSON structuré, indexable dans ElasticSearch. RGPD compliant."*
+
+---
+
+#### **Étape 4 : Transition vers le Défi (1 min)**
+
+**🎤 Dire** : *"Vous avez vu les 5 étapes : installer Serilog, configurer avec JSON, créer les masqueurs PII, injecter ILogger, ajouter Data Annotations. Maintenant, à vous de sécuriser un PaymentController complet. 30 minutes !"*
 
 ---
 

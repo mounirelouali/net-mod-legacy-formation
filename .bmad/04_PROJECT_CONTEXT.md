@@ -451,6 +451,68 @@ refactor(domain): Migration Client vers record C# 12
 
 ---
 
+### Règle Obligatoire : Section Démonstration Live dans Chaque Session
+
+**⚠️ RÈGLE CRITIQUE** : Chaque session de formation DOIT inclure une section **🎬 Démonstration Live** positionnée APRÈS les concepts fondamentaux et AVANT le défi d'application.
+
+**Structure obligatoire de la Démonstration Live** :
+- **Durée** : 15-20 minutes (ajustable selon complexité)
+- **Position** : Entre "Analyse Collective" et "Défi d'Application"
+- **Objectif** : Montrer en temps réel l'implémentation complète
+
+**Contenu obligatoire** :
+1. **Étape 1 : Mise en situation (2 min)** - Code de départ legacy avec problèmes identifiés
+2. **Étape 2 : Live Coding (10-15 min)** - Implémentation pas-à-pas avec explications formateur
+3. **Étape 3 : Validation et Preuve (3 min)** - Exécution + démonstration fonctionnelle
+4. **Étape 4 : Transition vers Défi (1 min)** - Résumé des étapes et lancement du défi
+
+**Format des instructions formateur** :
+```markdown
+**🎤 Dire** : *"Phrase exacte à prononcer pendant la démo"*
+```
+
+**Validation** : Aucune session n'est complète sans section Démonstration Live avec les 4 étapes.
+
+---
+
+### Règle Obligatoire : Guide de Présentation pour Chaque Infographie
+
+**⚠️ RÈGLE CRITIQUE** : À chaque fois qu'une infographie NotebookLM est générée, l'agent DOIT créer un **Guide de Présentation** détaillé.
+
+**Fichier à créer** : `05_Ressources_Visuelles/GUIDE_PRESENTATION_JX_SY_INFOGRAPHIE_*.md`
+
+**Structure obligatoire du Guide** :
+1. **Métadonnées** : Session, durée, moment de présentation
+2. **Objectif de la Présentation** : Ce que l'infographie doit transmettre
+3. **Script de Présentation avec Étapes Numérotées** :
+   - Chaque étape doit avoir :
+     - **🎤 Phrase à dire** : Texte exact à prononcer
+     - **👉 Action** : Geste ou pointage à faire
+     - **Éléments visuels à mentionner** : Liste des éléments de l'infographie
+   - Durée de chaque étape
+4. **Points Clés à Ne PAS Oublier** : Messages critiques à transmettre
+5. **Timing** : Tableau détaillé avec cumuls
+6. **Questions Anticipées** : Q&A prévisibles avec réponses
+
+**Exemple d'étape conforme** :
+```markdown
+### **Étape 2 : Bloc "AVANT - Le Danger" (30 secondes)**
+
+**🎤 Phrase à dire** :  
+*"À gauche, vous voyez le scénario AVANT : un mot de passe SQL Server hardcodé..."*
+
+**👉 Action** : Pointer vers la partie gauche de l'infographie.
+
+**Éléments visuels à mentionner** :
+- Icône cadenas ouvert 🔓
+- Texte "Password=Admin123!" en rouge
+- Flèche vers Git
+```
+
+**Validation** : Le guide doit permettre au formateur de présenter l'infographie en 3-5 minutes avec un script complet.
+
+---
+
 ### Règle Obligatoire : Génération Automatique des Solutions
 
 **⚠️ RÈGLE CRITIQUE** : À chaque fois qu'une session est terminée et qu'un défi d'application (⚙️) a été rédigé, l'agent DOIT :
