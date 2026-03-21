@@ -934,5 +934,1130 @@ Le chronomètre démarre... **maintenant** !
 
 ---
 
-**🔗 Prochaine session** : Modernisation des Services Externes (E-mail avec MailKit) - 13h30
+## 🕐 Session 3 (13h30 - 16h00) : Modernisation des Services Externes (E-mail avec MailKit)
+
+**Durée** : 2h30  
+**Niveau** : ⭐⭐⭐ Avancé (Architecture + Sécurité + Async)
+
+### 🎯 Objectif de Performance
+
+À la fin de cette session, vous serez capable de **moderniser l'envoi d'emails** en remplaçant l'ancien `SmtpClient` obsolète par **MailKit**, une librairie moderne qui supporte **TLS obligatoire**, la **programmation asynchrone** et le **découplage via DI**.
+
+**Transformation visée** :
+```csharp
+// ❌ AVANT (.NET Framework - SmtpClient obsolète)
+var client = new SmtpClient("smtp.example.com");
+client.Send(message); // 😱 Bloque un thread, TLS optionnel
+
+// ✅ APRÈS (.NET 8 - MailKit moderne)
+public interface IEmailService
+{
+    Task SendAsync(string to, string subject, string body);
+}
+
+// Injection DI + Async + TLS obligatoire
+await _emailService.SendAsync(to, subject, body);
+```
+
+---
+
+### 🧠 Concepts Fondamentaux
+
+#### 💡 Métaphore : La Vieille Camionnette vs Le Camion Électrique Moderne
+
+<img src="../05_Ressources_Visuelles/J3_S3_INFOGRAPHIE_MAILKIT.png" alt="Infographie MailKit" style="max-width:100%; height:auto;">
+
+> **La camionnette rouillée vs le camion électrique** 📧
+> 
+> **SmtpClient (Legacy .NET Framework)** :
+> - Une vieille camionnette de livraison rouillée
+> - Microsoft ne la maintient plus (obsolète depuis .NET Core)
+> - Elle bloque un thread pendant toute la durée de l'envoi (synchrone)
+> - TLS/SSL optionnel → risque de faille de sécurité
+> - Impossible à tester (couplage fort avec le serveur SMTP)
+>
+> **MailKit (.NET 8 Moderne)** :
+> - Un camion électrique moderne recommandé par Microsoft
+> - Asynchrone : `await SendAsync()` libère les threads
+> - TLS 1.2/1.3 **obligatoire** via `SecureSocketOptions.StartTls`
+> - Testable : injection de `IEmailService`
+> - Maintenu activement par la communauté
+
+---
+
+#### 📚 Pourquoi Microsoft recommande MailKit
+
+**Problèmes de `System.Net.Mail.SmtpClient`** :
+
+| Problème | Impact Business | Coût Estimé |
+|----------|----------------|-------------|
+| **Obsolète** | Microsoft ne corrige plus les bugs | Vulnérabilités non patchées |
+| **Synchrone bloquant** | Thread bloqué pendant l'envoi (3-10 sec) | Scalabilité limitée à 10-50 emails/sec |
+| **TLS optionnel** | Risque de faille Man-in-the-Middle | Fuite de credentials SMTP |
+| **Impossible à mocker** | Tests unitaires impossibles | -50% vélocité tests |
+
+**Avantages de MailKit** :
+
+✅ **Asynchrone** : `await client.SendAsync()` ne bloque pas de thread  
+✅ **TLS obligatoire** : `SecureSocketOptions.StartTls` ou `SslOnConnect`  
+✅ **Découplé** : Interface `IEmailService` injectable  
+✅ **Testable** : Mock de l'interface dans les tests  
+✅ **Moderne** : Support IMAP, POP3, MIME complet
+
+---
+
+### 🛠️ Architecture : Interface + Implémentation
+
+**Principe SOLID : Inversion de Dépendances**
+
+Votre code métier ne doit **jamais** dépendre directement de MailKit. Il doit dépendre d'une **interface**.
+
+```mermaid
+graph TD
+    A[ValidFlowController] --> B[IEmailService]
+    B --> C[MailKitEmailService]
+    C --> D[MailKit Library]
+    
+    style A fill:#e1f5ff
+    style B fill:#d4edda
+    style C fill:#fff4e1
+    style D fill:#f8d7da
+```
+
+---
+
+#### Étape 1 : Définir l'interface `IEmailService`
+
+**Fichier `IEmailService.cs`** :
+```csharp
+namespace ValidFlow.Infrastructure.Interfaces;
+
+public interface IEmailService
+{
+    Task SendAsync(string to, string subject, string body);
+}
+```
+
+**Pourquoi une interface ?**
+- Découplage : Le code métier ne connaît pas MailKit
+- Testabilité : On peut mocker `IEmailService` dans les tests
+- Flexibilité : On peut changer de librairie sans toucher au code métier
+
+---
+
+#### Étape 2 : Installer MailKit
+
+**Commande** :
+```bash
+dotnet add package MailKit
+```
+
+**Packages installés** :
+- `MailKit` : Client SMTP/IMAP/POP3 moderne
+- `MimeKit` : Gestion des messages MIME (dépendance automatique)
+
+---
+
+#### Étape 3 : Implémenter `MailKitEmailService`
+
+**Fichier `MailKitEmailService.cs`** :
+```csharp
+using Microsoft.Extensions.Options;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+using ValidFlow.Infrastructure.Interfaces;
+using ValidFlow.Infrastructure.Options;
+
+namespace ValidFlow.Infrastructure.Services;
+
+public class MailKitEmailService : IEmailService
+{
+    private readonly EmailOptions _options;
+
+    public MailKitEmailService(IOptions<EmailOptions> options)
+    {
+        _options = options.Value;
+    }
+
+    public async Task SendAsync(string to, string subject, string body)
+    {
+        // 1. Créer le message MIME
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("ValidFlow System", _options.From));
+        message.To.Add(new MailboxAddress("", to));
+        message.Subject = subject;
+
+        message.Body = new TextPart("html")
+        {
+            Text = body
+        };
+
+        // 2. Envoyer via SMTP avec TLS obligatoire
+        using var client = new SmtpClient();
+        
+        try
+        {
+            // Connexion avec TLS obligatoire (SecureSocketOptions.StartTls)
+            await client.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.StartTls);
+            
+            // Authentification
+            await client.AuthenticateAsync(_options.Username, _options.Password);
+            
+            // Envoi asynchrone (ne bloque pas de thread)
+            await client.SendAsync(message);
+        }
+        finally
+        {
+            await client.DisconnectAsync(true);
+        }
+    }
+}
+```
+
+**Points clés** :
+- ✅ `async Task` : Méthode asynchrone
+- ✅ `SecureSocketOptions.StartTls` : TLS 1.2+ obligatoire
+- ✅ `using var client` : Libération automatique des ressources
+- ✅ `try/finally` : Déconnexion garantie même en cas d'erreur
+
+---
+
+#### Étape 4 : Configuration via `IOptions<EmailOptions>`
+
+**Fichier `EmailOptions.cs`** :
+```csharp
+namespace ValidFlow.Infrastructure.Options;
+
+public class EmailOptions
+{
+    public string Host { get; set; } = string.Empty;
+    public int Port { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string From { get; set; } = string.Empty;
+}
+```
+
+**Fichier `appsettings.json`** (données non sensibles) :
+```json
+{
+  "Email": {
+    "Host": "smtp.example.com",
+    "Port": 587,
+    "Username": "noreply@validflow.com",
+    "From": "noreply@validflow.com"
+  }
+}
+```
+
+**User Secrets** (mot de passe hors Git) :
+```bash
+dotnet user-secrets set "Email:Password" "MonMotDePasseSMTP!"
+```
+
+---
+
+#### Étape 5 : Enregistrement dans le conteneur DI
+
+**Fichier `Program.cs`** :
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using ValidFlow.Infrastructure.Interfaces;
+using ValidFlow.Infrastructure.Options;
+using ValidFlow.Infrastructure.Services;
+
+var builder = Host.CreateDefaultBuilder(args);
+
+builder.ConfigureServices((context, services) =>
+{
+    // Configuration Email
+    services.Configure<EmailOptions>(
+        context.Configuration.GetSection("Email"));
+    
+    // Enregistrement du service Email (Transient = nouvelle instance à chaque injection)
+    services.AddTransient<IEmailService, MailKitEmailService>();
+});
+
+var host = builder.Build();
+```
+
+**Pourquoi `AddTransient` ?**
+- Un `SmtpClient` ne doit **jamais** être réutilisé entre plusieurs envois
+- Chaque appel à `SendAsync()` doit avoir sa propre instance
+
+---
+
+### 🔐 Sécurité TLS Obligatoire
+
+**Les 3 options de sécurité MailKit** :
+
+```csharp
+// Option 1 : StartTls (Port 587 - Recommandé)
+await client.ConnectAsync(host, 587, SecureSocketOptions.StartTls);
+
+// Option 2 : SslOnConnect (Port 465 - Implicit SSL)
+await client.ConnectAsync(host, 465, SecureSocketOptions.SslOnConnect);
+
+// Option 3 : Auto (MailKit détecte - Non recommandé en production)
+await client.ConnectAsync(host, port, SecureSocketOptions.Auto);
+```
+
+**⚠️ JAMAIS faire ça** :
+```csharp
+// ❌ DANGEREUX : Désactive la validation du certificat SSL !
+await client.ConnectAsync(host, port, SecureSocketOptions.None);
+```
+
+---
+
+### ⚡ Programmation Asynchrone : Pourquoi c'est critique
+
+**Scénario sans async (SmtpClient legacy)** :
+
+```csharp
+// ❌ AVANT : Synchrone bloquant
+public void SendEmail(string to, string subject, string body)
+{
+    var client = new SmtpClient();
+    client.Send(message); // Bloque le thread pendant 3-10 secondes !
+}
+```
+
+**Problème** :
+- Si 1000 utilisateurs envoient un email en même temps
+- 1000 threads bloqués pendant 3 secondes chacun
+- Le ThreadPool est saturé → l'application devient lente
+
+---
+
+**Scénario avec async (MailKit moderne)** :
+
+```csharp
+// ✅ APRÈS : Asynchrone non-bloquant
+public async Task SendEmailAsync(string to, string subject, string body)
+{
+    await _emailService.SendAsync(to, subject, body); // Thread libéré pendant l'envoi
+}
+```
+
+**Avantages** :
+- Le thread est rendu au ThreadPool pendant l'envoi réseau
+- 1000 emails peuvent être envoyés avec seulement 10-20 threads
+- Scalabilité maximale
+
+---
+
+### 💬 Analyse Collective (3 min)
+
+#### 📢 Question Interactive
+
+**Question** : "Pourquoi est-ce que je ne peux PAS faire ça ?"
+
+```csharp
+public class OrderController
+{
+    public void PlaceOrder()
+    {
+        var emailService = new MailKitEmailService(/* options */);
+        emailService.SendAsync(to, subject, body).Wait(); // ❌ Pourquoi pas ?
+    }
+}
+```
+
+*(Laisser 10 secondes de réflexion)*
+
+**💡 Réponses attendues** :
+
+1. **`new MailKitEmailService()`** : Crée un couplage fort. Impossible à mocker dans les tests.
+2. **`.Wait()`** : Bloque le thread ! On perd tout l'avantage de l'asynchrone. Risque de deadlock.
+
+**✅ Solution correcte** :
+```csharp
+public class OrderController
+{
+    private readonly IEmailService _emailService;
+
+    // Injection DI
+    public OrderController(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    // Méthode async de bout en bout
+    public async Task PlaceOrderAsync()
+    {
+        await _emailService.SendAsync(to, subject, body);
+    }
+}
+```
+
+---
+
+### ⚙️ Défi d'Application (40 min)
+
+**Contexte** :
+
+ValidFlow doit envoyer un email de notification quand un document est approuvé. Actuellement, le code utilise un vieux `SmtpClient` synchrone avec le mot de passe hardcodé.
+
+**Code de départ** (Legacy) :
+
+```csharp
+public class DocumentApprovalService
+{
+    public void ApproveDocument(int documentId, string adminEmail)
+    {
+        // Logique métier
+        Console.WriteLine($"Document {documentId} approuvé.");
+        
+        // Envoi email (LEGACY - À MODERNISER)
+        var smtpClient = new SmtpClient("smtp.example.com");
+        smtpClient.Credentials = new NetworkCredential("user", "MotDePasseEnClair!"); // 😱 Hardcodé
+        
+        var message = new MailMessage("noreply@validflow.com", adminEmail);
+        message.Subject = "Document Approuvé";
+        message.Body = $"Le document {documentId} a été approuvé.";
+        
+        smtpClient.Send(message); // Bloque le thread
+    }
+}
+```
+
+**Mission** :
+
+1. Créer l'interface `IEmailService` avec la méthode `Task SendAsync(string to, string subject, string body)`
+2. Implémenter `MailKitEmailService` avec support TLS obligatoire (`SecureSocketOptions.StartTls`)
+3. Créer `EmailOptions` avec Host, Port, Username, Password, From
+4. Stocker le mot de passe SMTP dans User Secrets
+5. Modifier `DocumentApprovalService` pour injecter `IEmailService`
+6. Transformer la méthode `ApproveDocument` en `ApproveDocumentAsync` (asynchrone)
+7. Enregistrer `IEmailService` dans `Program.cs` avec `AddTransient`
+
+**Critères de succès** :
+- ✅ Interface `IEmailService` créée
+- ✅ Package MailKit installé
+- ✅ `MailKitEmailService` implémente `IEmailService` avec TLS obligatoire
+- ✅ Mot de passe SMTP dans User Secrets (hors Git)
+- ✅ `DocumentApprovalService` injecte `IEmailService` (pas de `new`)
+- ✅ Méthode `ApproveDocumentAsync` est asynchrone (`async Task`)
+- ✅ Application compile et fonctionne (`dotnet run`)
+
+**Durée** : 40 minutes
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Si vous bloquez, voici quelques indices** :
+
+1. **Installation MailKit** :
+   - `dotnet add package MailKit` dans le projet Infrastructure
+   - Vérifier que le package apparaît dans le `.csproj`
+
+2. **Création de l'interface** :
+   - Placez-la dans `ValidFlow.Infrastructure/Interfaces/IEmailService.cs`
+   - Signature : `Task SendAsync(string to, string subject, string body);`
+
+3. **Configuration EmailOptions** :
+   - Créer la classe dans `ValidFlow.Infrastructure/Options/EmailOptions.cs`
+   - Propriétés : Host, Port, Username, Password, From
+
+4. **Stocker le mot de passe** :
+   - `dotnet user-secrets init` (dans le projet Infrastructure)
+   - `dotnet user-secrets set "Email:Password" "VotreMotDePasse"`
+
+5. **SecureSocketOptions** :
+   - Utiliser `SecureSocketOptions.StartTls` pour le port 587
+   - Ou `SecureSocketOptions.SslOnConnect` pour le port 465
+
+6. **Transformation en async** :
+   - Signature : `public async Task ApproveDocumentAsync(...)`
+   - Appel : `await _emailService.SendAsync(...);`
+
+7. **Troubleshooting** :
+   - Si erreur `SmtpCommandException: 5.7.0 Authentication Required` : Vérifier username/password
+   - Si erreur `SslHandshakeException` : Vérifier que le serveur SMTP supporte TLS 1.2+
+   - Si `NullReferenceException` : Vérifier que `AddTransient` est appelé avant `Build()`
+
+---
+
+### 🔗 Lien vers la Solution
+
+Une fois l'exercice terminé, la **solution complète** sera partagée sur le Drive partagé.
+
+**Chemin** : `Solutions_A_Partager/J3_S3_SOLUTION_MAILKIT.md`
+
+---
+
+### ⏱️ Timing Détaillé
+
+| Activité | Début | Fin | Durée | Cumul |
+|----------|-------|-----|-------|-------|
+| 📢 Ouverture + Métaphore Camionnette | 13h30 | 13h37 | 7 min | 7 min |
+| 🧠 Concepts : Pourquoi MailKit ? | 13h37 | 13h47 | 10 min | 17 min |
+| 🛠️ Architecture : Interface + Impl (5 étapes) | 13h47 | 14h12 | 25 min | 42 min |
+| 🔐 Sécurité TLS + Async | 14h12 | 14h22 | 10 min | 52 min |
+| 💬 Analyse Collective | 14h22 | 14h25 | 3 min | 55 min |
+| 🎤 Lancement Défi | 14h25 | 14h27 | 2 min | 57 min |
+| ⚙️ Défi d'Application | 14h27 | 15h07 | 40 min | 97 min |
+| 🔗 Correction Collective | 15h07 | 15h32 | 25 min | 122 min |
+| 📝 Synthèse + Questions | 15h32 | 15h42 | 10 min | 132 min |
+| ⏸️ PAUSE | 15h42 | 16h00 | 18 min | 150 min |
+
+**Total Session** : **2h30** ✅
+
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (7 minutes)
+
+**Objectif** : Comprendre pourquoi SmtpClient est obsolète et pourquoi MailKit est le standard  
+**Message clé** : Microsoft recommande officiellement MailKit pour .NET Core/.NET 8
+
+Bonjour à tous ! On attaque la troisième session du Jour 3, et c'est une session importante : on va moderniser l'envoi d'emails.
+
+**Question interactive** : Qui utilise encore `System.Net.Mail.SmtpClient` dans ses projets ?
+
+*(Plusieurs mains se lèvent)*
+
+Et bien, je vais vous apprendre quelque chose qui va peut-être vous surprendre : **Microsoft a officiellement déclaré `SmtpClient` comme obsolète** depuis .NET Core. La documentation officielle recommande d'utiliser une librairie tierce : **MailKit**.
+
+Pourquoi ? Trois raisons :
+
+1. **SmtpClient est synchrone** → bloque un thread pendant 3-10 secondes par email
+2. **TLS est optionnel** → risque de faille de sécurité Man-in-the-Middle
+3. **Impossible à tester** → couplage fort avec le serveur SMTP
+
+Aujourd'hui, vous allez apprendre à utiliser **MailKit** : asynchrone, TLS obligatoire, testable, et maintenu activement par la communauté.
+
+On va voir l'architecture complète : interface `IEmailService`, implémentation `MailKitEmailService`, injection DI, et sécurisation TLS.
+
+C'est parti !
+
+---
+
+#### ⚡ Lancement du Défi d'Application (2 minutes)
+
+**Objectif** : Moderniser l'envoi d'email legacy avec MailKit  
+**Durée** : 40 minutes  
+**Critère de réussite** : TLS obligatoire, async, injection DI, mot de passe hors Git
+
+Parfait, vous avez vu toute l'architecture MailKit en action. Maintenant, à vous de moderniser un vrai service legacy !
+
+**Votre mission** : Vous avez un service `DocumentApprovalService` qui envoie un email avec l'ancien `SmtpClient`. Vous allez le moderniser avec MailKit : interface `IEmailService`, implémentation avec TLS obligatoire, injection DI, et mot de passe dans User Secrets.
+
+Vous avez **40 minutes**. Objectif : une application asynchrone, sécurisée (TLS), testable (injection DI), et sans secrets dans Git.
+
+💡 **Ressources disponibles** :
+- Pistes de Réflexion (section ci-dessus)
+- Documentation MailKit : https://github.com/jstedfast/MailKit
+- Commande `dotnet add package MailKit`
+
+Le chronomètre démarre... **maintenant** !
+
+---
+
+## 🕑 Session 4 (15h10 - 17h10) : Sécurisation des Flux et Logging (Serilog + Validation)
+
+**Durée** : 2h  
+**Niveau** : ⭐⭐⭐ Avancé (Sécurité + Observabilité + RGPD)
+
+### 🎯 Objectif de Performance
+
+À la fin de cette session, vous serez capable de **sécuriser les logs et les inputs** en utilisant **Serilog** pour des logs structurés JSON, **Data Annotations** pour la validation stricte, et des techniques de **masquage PII** (Personal Identifiable Information) pour respecter le RGPD.
+
+**Transformation visée** :
+```csharp
+// ❌ AVANT (Legacy - Logs non structurés + PII en clair)
+Console.WriteLine($"User {email} logged in with password {password}"); // 😱 PII en clair !
+
+// ✅ APRÈS (.NET 8 - Logs structurés + Masquage PII + Validation)
+[Required]
+[EmailAddress]
+public string Email { get; set; }
+
+_logger.LogInformation("User {MaskedEmail} logged in", MaskEmail(email));
+// Output JSON: {"@timestamp":"2026-03-20T22:00:00Z","@level":"Information","MaskedEmail":"jo***@example.com"}
+```
+
+---
+
+### 🧠 Concepts Fondamentaux
+
+#### 💡 Métaphore : Le Registre Papier Désorganisé vs La Base de Données Sécurisée
+
+<img src="../05_Ressources_Visuelles/J3_S4_INFOGRAPHIE_LOGGING.png" alt="Infographie Logging Sérilog" style="max-width:100%; height:auto;">
+
+> **Du registre papier au système structuré** 🔒
+> 
+> **Console.WriteLine() (Legacy)** :
+> - Un registre papier en désordre avec notes manuscrites illisibles
+> - Logs texte non structurés : impossible à indexer ou requêter
+> - PII en clair : emails, mots de passe, tokens exposés
+> - Interpolation `$"..."` crée un nouveau template à chaque fois
+> - Impossible de filtrer par niveau (Info, Warning, Error)
+>
+> **Serilog JSON (Moderne)** :
+> - Une base de données structurée et sécurisée
+> - Logs JSON indexables (ElasticSearch, Seq)
+> - Template constant : `_logger.LogInfo("User {UserId}", id)`
+> - Masquage automatique des PII (emails partiels, [REDACTED])
+> - Niveaux de log : Debug, Info, Warning, Error, Critical
+
+---
+
+#### 📚 Problème : Logs Non Structurés en Legacy
+
+**En .NET Framework**, le logging se faisait souvent ainsi :
+
+```csharp
+// Legacy - Texte non structuré
+Console.WriteLine($"Payment of {amount} for card {cardNumber} at {DateTime.Now}");
+// Output: Payment of 150 for card 4532-1234-5678-9012 at 20/03/2026 22:15:30
+```
+
+**Problèmes** :
+
+| Problème | Impact | Coût Estimé |
+|----------|--------|-------------|
+| **Non structuré** | Impossible de requêter "tous les payments > 100€" | Analyse manuelle = heures de travail |
+| **PII en clair** | Numéro de carte visible dans les logs | Violation RGPD = 20M€ d'amende max |
+| **Interpolation** | Template différent à chaque appel → gaspillage mémoire | Performance dégradée |
+| **Pas de niveaux** | Impossible de filtrer Info vs Error | Bruit excessif en production |
+
+---
+
+### 🔐 Validation des Inputs avec Data Annotations
+
+**Principe** : Valider **TOUTES** les données entrantes AVANT de les traiter.
+
+#### Les Attributs Essentiels
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+
+public class LoginRequest
+{
+    [Required(ErrorMessage = "L'email est requis")]
+    [EmailAddress(ErrorMessage = "Format d'email invalide")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(100, MinimumLength = 8, ErrorMessage = "Le mot de passe doit faire entre 8 et 100 caractères")]
+    [RegularExpression(@"^(?=.*[A-Z])(?=.*\d).*$", ErrorMessage = "Le mot de passe doit contenir une majuscule et un chiffre")]
+    public string Password { get; set; } = string.Empty;
+
+    [Range(18, 120, ErrorMessage = "L'âge doit être entre 18 et 120 ans")]
+    public int Age { get; set; }
+}
+```
+
+#### Validation dans un Contrôleur API
+
+```csharp
+[ApiController] // ✅ Valide automatiquement ModelState
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
+{
+    [HttpPost("login")]
+    public IActionResult Login([FromBody] LoginRequest request)
+    {
+        // Si [ApiController] : validation automatique, retourne HTTP 400 si invalide
+        // Sinon, vérifier manuellement :
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
+        // Code métier ici
+        return Ok();
+    }
+}
+```
+
+**Important** : L'attribut `[ApiController]` valide automatiquement et retourne HTTP 400 Bad Request si `ModelState.IsValid == false`.
+
+---
+
+### 📊 Serilog : Logging Structuré Moderne
+
+#### Installation
+
+```bash
+dotnet add package Serilog.AspNetCore
+dotnet add package Serilog.Sinks.Console
+dotnet add package Serilog.Sinks.File
+dotnet add package Serilog.Sinks.Seq
+```
+
+---
+
+#### Configuration dans `Program.cs`
+
+```csharp
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Json;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configuration Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Réduit le bruit Microsoft
+    .WriteTo.Console(new JsonFormatter()) // Console en JSON
+    .WriteTo.File(
+        new JsonFormatter(),
+        "logs/app-.json",
+        rollingInterval: RollingInterval.Day) // Fichier JSON par jour
+    .WriteTo.Seq("http://localhost:5341") // Serveur Seq (optionnel)
+    .CreateLogger();
+
+builder.Host.UseSerilog(); // Remplace le logger .NET par défaut
+
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+```
+
+---
+
+#### Utilisation dans un Service
+
+```csharp
+public class PaymentService
+{
+    private readonly ILogger<PaymentService> _logger;
+
+    public PaymentService(ILogger<PaymentService> logger)
+    {
+        _logger = logger;
+    }
+
+    public void ProcessPayment(decimal amount, string cardNumber)
+    {
+        string maskedCard = MaskCreditCard(cardNumber);
+        
+        // ✅ BON : Template constant avec paramètres
+        _logger.LogInformation("Processing payment of {Amount} for card {MaskedCard}", amount, maskedCard);
+        
+        // ❌ MAUVAIS : Interpolation
+        // _logger.LogInformation($"Processing payment of {amount} for card {maskedCard}");
+    }
+
+    private string MaskCreditCard(string cardNumber)
+    {
+        if (cardNumber.Length < 4) return "****";
+        return "****-****-****-" + cardNumber.Substring(cardNumber.Length - 4);
+    }
+}
+```
+
+**Output JSON** :
+```json
+{
+  "@timestamp": "2026-03-20T22:15:30.123Z",
+  "@level": "Information",
+  "@message": "Processing payment of {Amount} for card {MaskedCard}",
+  "Amount": 150,
+  "MaskedCard": "****-****-****-9012",
+  "SourceContext": "PaymentService"
+}
+```
+
+---
+
+### 🎭 Masquage des PII (Personal Identifiable Information)
+
+**Données à JAMAIS logger en clair** :
+- Mots de passe
+- Numéros de carte bancaire
+- Emails complets
+- Numéros de sécurité sociale
+- Tokens d'authentification
+
+#### Méthode de Masquage Email
+
+```csharp
+private string MaskEmail(string email)
+{
+    if (string.IsNullOrEmpty(email)) return "***";
+    
+    var parts = email.Split('@');
+    if (parts.Length != 2) return "***";
+    
+    string name = parts[0];
+    string domain = parts[1];
+    
+    string maskedName = name.Length > 2 
+        ? name.Substring(0, 2) + "***" 
+        : "***";
+    
+    return $"{maskedName}@{domain}";
+}
+
+// Exemple :
+// Input : john.doe@company.com
+// Output : jo***@company.com
+```
+
+#### Méthode de Masquage Carte Bancaire
+
+```csharp
+private string MaskCreditCard(string cardNumber)
+{
+    // Retire les espaces/tirets
+    string cleaned = cardNumber.Replace("-", "").Replace(" ", "");
+    
+    if (cleaned.Length < 4) return "****";
+    
+    // Garde seulement les 4 derniers chiffres
+    return "****-****-****-" + cleaned.Substring(cleaned.Length - 4);
+}
+
+// Exemple :
+// Input : 4532-1234-5678-9012
+// Output : ****-****-****-9012
+```
+
+---
+
+### ⚠️ Anti-Patterns à ÉVITER
+
+#### ❌ Anti-Pattern 1 : Interpolation de chaînes
+
+```csharp
+// ❌ MAUVAIS : Crée un nouveau template à chaque appel
+_logger.LogInformation($"User {userId} logged in at {DateTime.Now}");
+```
+
+**Problème** : Serilog ne peut pas indexer `userId`. Chaque appel crée un template unique en mémoire.
+
+**✅ Correction** :
+```csharp
+_logger.LogInformation("User {UserId} logged in at {Timestamp}", userId, DateTime.Now);
+```
+
+---
+
+#### ❌ Anti-Pattern 2 : Logger des objets complets
+
+```csharp
+// ❌ DANGEREUX : L'objet peut contenir des PII
+_logger.LogInformation("Request received: {@Request}", request);
+```
+
+**Problème** : Si `request` contient un mot de passe, il sera dans les logs.
+
+**✅ Correction** :
+```csharp
+// Créer un DTO dédié au logging (sans PII)
+var logDto = new { request.UserId, request.Action, Timestamp = DateTime.UtcNow };
+_logger.LogInformation("Request received: {@RequestLog}", logDto);
+```
+
+---
+
+#### ❌ Anti-Pattern 3 : Oublier de vérifier ModelState
+
+```csharp
+// ❌ MAUVAIS : Traite les données sans valider
+[HttpPost]
+public IActionResult Create([FromBody] UserDto user)
+{
+    _context.Users.Add(user); // Peut planter si données invalides
+    _context.SaveChanges();
+    return Ok();
+}
+```
+
+**✅ Correction** :
+```csharp
+[ApiController] // Valide automatiquement
+[HttpPost]
+public IActionResult Create([FromBody] UserDto user)
+{
+    // Validation automatique grâce à [ApiController]
+    _context.Users.Add(user);
+    _context.SaveChanges();
+    return Ok();
+}
+```
+
+---
+
+### 🔍 Les 5 Niveaux de Log Serilog
+
+```csharp
+_logger.LogTrace("Message de débogage très détaillé"); // Dev seulement
+_logger.LogDebug("Information de débogage"); // Dev seulement
+_logger.LogInformation("Opération normale réussie"); // Info générale
+_logger.LogWarning("Quelque chose d'anormal mais géré"); // Attention requise
+_logger.LogError(exception, "Une erreur s'est produite"); // Erreur à investiguer
+_logger.LogCritical("Le système est dans un état critique !"); // Alerte immédiate
+```
+
+**Filtrage par niveau** :
+```csharp
+.MinimumLevel.Information() // Affiche Info, Warning, Error, Critical (pas Debug/Trace)
+.MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // Réduit le bruit Microsoft
+```
+
+---
+
+### 💬 Analyse Collective (3 min)
+
+#### 📢 Question Interactive
+
+**Question** : "Pourquoi cette approche est-elle DANGEREUSE ?"
+
+```csharp
+public class UserService
+{
+    public void CreateUser(string email, string password)
+    {
+        _logger.LogInformation($"Creating user with email {email} and password {password}");
+        // ...
+    }
+}
+```
+
+*(Laisser 10 secondes de réflexion)*
+
+**💡 Réponses attendues** :
+
+1. **Mot de passe en clair dans les logs** : Violation RGPD majeure
+2. **Interpolation `$"..."`** : Serilog ne peut pas indexer les champs
+3. **Email non masqué** : PII exposé
+
+**✅ Solution correcte** :
+```csharp
+public void CreateUser(string email, string password)
+{
+    string maskedEmail = MaskEmail(email);
+    
+    // Ne JAMAIS logger le mot de passe !
+    _logger.LogInformation("Creating user with email {MaskedEmail}", maskedEmail);
+}
+```
+
+---
+
+### ⚙️ Défi d'Application (30 min)
+
+**Contexte** :
+
+Vous héritez d'un microservice `PaymentService` qui traite les paiements par carte bancaire. Actuellement :
+- Les logs utilisent `Console.WriteLine()` avec interpolation
+- Le numéro de carte est loggé en clair
+- Aucune validation des inputs
+
+**Code de départ** (Legacy) :
+
+```csharp
+public class PaymentController : ControllerBase
+{
+    [HttpPost("process")]
+    public IActionResult ProcessPayment([FromBody] PaymentRequest request)
+    {
+        // ❌ Aucune validation !
+        Console.WriteLine($"Processing payment of {request.Amount} for card {request.CardNumber}"); // PII en clair
+        
+        // Logique métier
+        return Ok("Payment processed");
+    }
+}
+
+public class PaymentRequest
+{
+    public decimal Amount { get; set; }
+    public string CardNumber { get; set; }
+    public string Email { get; set; }
+}
+```
+
+**Mission** :
+
+1. Installer Serilog (packages : `Serilog.AspNetCore`, `Serilog.Sinks.File`)
+2. Configurer Serilog dans `Program.cs` avec sortie JSON vers fichier `logs/payment-.json`
+3. Ajouter Data Annotations sur `PaymentRequest` :
+   - `Amount` : `[Range(1, 10000)]`
+   - `CardNumber` : `[Required]`, `[RegularExpression(@"^\d{16}$")]` (16 chiffres)
+   - `Email` : `[Required]`, `[EmailAddress]`
+4. Créer méthodes `MaskCreditCard()` et `MaskEmail()`
+5. Remplacer `Console.WriteLine()` par `_logger.LogInformation()` avec masquage
+6. Ajouter `[ApiController]` pour validation automatique
+
+**Critères de succès** :
+- ✅ Serilog configuré avec sortie JSON dans fichier
+- ✅ Data Annotations sur `PaymentRequest`
+- ✅ Validation automatique (HTTP 400 si données invalides)
+- ✅ Logs structurés avec template constant
+- ✅ Numéro de carte masqué (`****-****-****-1234`)
+- ✅ Email masqué (`jo***@example.com`)
+- ✅ Mot de passe JAMAIS loggé
+
+**Durée** : 30 minutes
+
+---
+
+### 💡 Pistes de Réflexion
+
+**Si vous bloquez, voici quelques indices** :
+
+1. **Installation Serilog** :
+   ```bash
+   dotnet add package Serilog.AspNetCore
+   dotnet add package Serilog.Sinks.File
+   dotnet add package Serilog.Formatting.Json
+   ```
+
+2. **Configuration Serilog** :
+   ```csharp
+   Log.Logger = new LoggerConfiguration()
+       .WriteTo.File(new JsonFormatter(), "logs/payment-.json", rollingInterval: RollingInterval.Day)
+       .CreateLogger();
+   
+   builder.Host.UseSerilog();
+   ```
+
+3. **Data Annotations** :
+   ```csharp
+   [Range(1, 10000)]
+   public decimal Amount { get; set; }
+   
+   [Required]
+   [RegularExpression(@"^\d{16}$")]
+   public string CardNumber { get; set; }
+   ```
+
+4. **Injection ILogger** :
+   ```csharp
+   private readonly ILogger<PaymentController> _logger;
+   
+   public PaymentController(ILogger<PaymentController> logger)
+   {
+       _logger = logger;
+   }
+   ```
+
+5. **Masquage** :
+   ```csharp
+   string maskedCard = "****-****-****-" + cardNumber.Substring(cardNumber.Length - 4);
+   _logger.LogInformation("Payment {Amount} for card {MaskedCard}", amount, maskedCard);
+   ```
+
+6. **Troubleshooting** :
+   - Si logs non créés : Vérifier les permissions du dossier `logs/`
+   - Si validation ne marche pas : Ajouter `[ApiController]` sur le contrôleur
+   - Si interpolation détectée : Remplacer `$"..."` par template avec paramètres
+
+---
+
+### 🔗 Lien vers la Solution
+
+Une fois l'exercice terminé, la **solution complète** sera partagée sur le Drive partagé.
+
+**Chemin** : `Solutions_A_Partager/J3_S4_SOLUTION_LOGGING.md`
+
+---
+
+### ⏱️ Timing Détaillé
+
+| Activité | Début | Fin | Durée | Cumul |
+|----------|-------|-----|-------|-------|
+| 📢 Ouverture + Métaphore Registre | 15h10 | 15h17 | 7 min | 7 min |
+| 🧠 Concepts : Logs Non Structurés | 15h17 | 15h22 | 5 min | 12 min |
+| 🔐 Validation Data Annotations | 15h22 | 15h32 | 10 min | 22 min |
+| 📊 Serilog : Config + Utilisation | 15h32 | 15h47 | 15 min | 37 min |
+| 🎭 Masquage PII | 15h47 | 15h57 | 10 min | 47 min |
+| ⚠️ Anti-Patterns + Niveaux de Log | 15h57 | 16h07 | 10 min | 57 min |
+| 💬 Analyse Collective | 16h07 | 16h10 | 3 min | 60 min |
+| 🎤 Lancement Défi | 16h10 | 16h12 | 2 min | 62 min |
+| ⚙️ Défi d'Application | 16h12 | 16h42 | 30 min | 92 min |
+| 🔗 Correction Collective | 16h42 | 17h02 | 20 min | 112 min |
+| 📝 Synthèse Jour 3 + Questions | 17h02 | 17h10 | 8 min | 120 min |
+
+**Total Session** : **2h00** ✅
+
+---
+
+### 📋 Consignes de Session
+
+#### 📢 Ouverture de Session (7 minutes)
+
+**Objectif** : Comprendre les risques des logs non structurés et des PII en clair  
+**Message clé** : Serilog JSON + Masquage PII = RGPD compliant
+
+Bienvenue pour la dernière session du Jour 3 ! On a déjà vu la configuration, les secrets, et l'envoi d'emails. Maintenant, on va s'attaquer à un problème **critique** pour la sécurité ET le RGPD : **les logs**.
+
+**Question interactive** : Qui a déjà vu des mots de passe ou des numéros de carte bancaire dans des logs en production ?
+
+*(Plusieurs mains se lèvent - malheureusement c'est fréquent)*
+
+En 2018, **Twitter a découvert qu'ils stockaient des mots de passe en clair dans leurs logs**. Des millions de comptes compromis.
+
+Aujourd'hui, vous allez apprendre à :
+1. **Valider TOUS les inputs** avec Data Annotations
+2. **Logger en JSON structuré** avec Serilog (indexable, requêtable)
+3. **Masquer automatiquement les PII** (emails, cartes bancaires, mots de passe)
+
+Deux règles d'or :
+- Ne **JAMAIS** logger de PII en clair
+- Ne **JAMAIS** utiliser l'interpolation `$"..."` avec Serilog
+
+C'est parti !
+
+---
+
+#### ⚡ Lancement du Défi d'Application (2 minutes)
+
+**Objectif** : Sécuriser les logs d'un service de paiement  
+**Durée** : 30 minutes  
+**Critère de réussite** : Serilog JSON, Data Annotations, PII masqués
+
+Parfait, vous avez vu Serilog en action, la validation, et le masquage PII. Maintenant, à vous de sécuriser un vrai service de paiement !
+
+**Votre mission** : Vous avez un `PaymentController` qui logge des numéros de carte en clair avec `Console.WriteLine()`. Vous allez le sécuriser avec Serilog JSON, Data Annotations, et masquage PII.
+
+Vous avez **30 minutes**. Objectif : logs structurés JSON dans un fichier, validation automatique des inputs, et PII masqués.
+
+💡 **Ressources disponibles** :
+- Pistes de Réflexion (section ci-dessus)
+- Documentation Serilog : https://serilog.net/
+- Commande `dotnet add package Serilog.AspNetCore`
+
+Le chronomètre démarre... **maintenant** !
+
+---
+
+### 🎉 Synthèse Jour 3 (8 minutes)
+
+**Félicitations** ! Vous avez terminé le Jour 3 : Sécuriser la Configuration et les Services.
+
+**Ce que vous avez appris aujourd'hui** :
+
+| Session | Compétence Acquise | Outil |
+|---------|-------------------|-------|
+| **Session 1 (09h00)** | Externalisation configuration | `appsettings.json` + `IOptions<T>` |
+| **Session 2 (10h40)** | Gestion des secrets | User Secrets + Azure Key Vault |
+| **Session 3 (13h30)** | Modernisation emails | MailKit + TLS + Async |
+| **Session 4 (15h10)** | Logging sécurisé | Serilog + Data Annotations + Masquage PII |
+
+**Vous êtes maintenant capable de** :
+- ✅ Supprimer TOUS les secrets du code source
+- ✅ Configurer une application .NET 8 multi-environnements
+- ✅ Envoyer des emails avec TLS obligatoire et async
+- ✅ Logger en JSON structuré avec masquage automatique des PII
+
+**Demain (Jour 4)** : Tests Unitaires + Docker + Cross-Platform
+
+**À demain 09h00** ! Repos bien mérité ce soir. 🎯
+
+---
+
+**FIN DU JOUR 3** 🎓
 
