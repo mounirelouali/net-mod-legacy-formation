@@ -7,6 +7,7 @@
 *.sln.docstates
 *.userprefs
 .idea/
+*.code-workspace
 
 # Build results
 [Dd]ebug/
@@ -114,6 +115,12 @@ documentation_complete_projet.md
 notebooklm-py_base_de_connaissances.md
 docs/
 # ----------------------------
+
+# --- DOSSIERS TECHNIQUES FORMATEUR ---
+.bmad/
+.validation/
+temp/
+# --------------------------------------
 
 # --- RESSOURCES VISUELLES (FORMATEUR UNIQUEMENT) ---
 # Les infographies NotebookLM ne doivent PAS être accessibles aux stagiaires avant la formation
